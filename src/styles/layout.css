@@ -451,6 +451,18 @@ html, body, #root {
   color: #fff;
 }
 
+.top-bar-btn--satellite-active {
+  background: #2c3e50;
+  border-color: #2c3e50;
+  color: #fff;
+}
+
+.top-bar-btn--satellite-active:hover {
+  background: #34495e;
+  border-color: #34495e;
+  color: #fff;
+}
+
 .compute-btn {
   padding: 8px 20px;
   border: none;

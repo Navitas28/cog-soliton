@@ -14,6 +14,8 @@ import { MapLegend } from './ColorLegend';
 import { loadNetworkIcons } from './mapIcons';
 import { AYODHYA_OUTLINE } from '../data/ayodhyaOutline';
 import { BHUBANESWAR_OUTLINE } from '../data/bhubaneswarOutline';
+import { RANCHI_OUTLINE } from '../data/ranchiOutline';
+import { BAREILLY_OUTLINE } from '../data/bareillyOutline';
 import type { NodeResult, LinkResult } from '../engine/engine';
 import type { DrawingTool } from '../store/networkStore';
 
@@ -65,6 +67,7 @@ export function MapCanvas() {
   const setEpsTimeIndex = useNetworkStore(s => s.setEpsTimeIndex);
 
   const [showInp, setShowInp] = useState(false);
+  const [isSatellite, setIsSatellite] = useState(false);
 
   // Result helpers
   const getNodeResult = useCallback((nodeId: string): NodeResult | undefined => {
@@ -326,14 +329,18 @@ export function MapCanvas() {
 
     // Update outline data and visibility based on loaded city
     const titleLower = model.title.toLowerCase();
-    const isAyodhya = titleLower.includes('ayodhya');
-    const isBbsr = titleLower.includes('bhubaneswar');
-    const showOutline = isAyodhya || isBbsr;
+    const cityOutlines: Record<string, GeoJSON.FeatureCollection> = {
+      ayodhya: AYODHYA_OUTLINE,
+      bhubaneswar: BHUBANESWAR_OUTLINE,
+      ranchi: RANCHI_OUTLINE,
+      bareilly: BAREILLY_OUTLINE,
+    };
+    const matchedCity = Object.keys(cityOutlines).find(c => titleLower.includes(c));
+    const showOutline = !!matchedCity;
 
-    // Swap outline GeoJSON source data based on city
     const outlineSrc = map.getSource(SRC_OUTLINE) as maplibregl.GeoJSONSource;
-    if (outlineSrc) {
-      outlineSrc.setData(isBbsr ? BHUBANESWAR_OUTLINE : AYODHYA_OUTLINE);
+    if (outlineSrc && matchedCity) {
+      outlineSrc.setData(cityOutlines[matchedCity]);
     }
 
     const outlineLayers = ['outline-fill', 'outline-border'];
@@ -478,6 +485,43 @@ export function MapCanvas() {
     };
   }, [mapReady]);
 
+  // --- Satellite toggle ---
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+
+    if (isSatellite) {
+      if (!map.getSource('satellite')) {
+        map.addSource('satellite', {
+          type: 'raster',
+          tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+          tileSize: 256,
+          maxzoom: 19,
+        });
+        map.addLayer({
+          id: 'satellite-tiles',
+          type: 'raster',
+          source: 'satellite',
+          paint: { 'raster-opacity': 1 },
+        }, 'outline-fill'); // Insert below outline layers
+      } else {
+        map.setLayoutProperty('satellite-tiles', 'visibility', 'visible');
+      }
+      // Hide CartoDB basemap
+      if (map.getLayer('carto-basemap')) {
+        map.setLayoutProperty('carto-basemap', 'visibility', 'none');
+      }
+    } else {
+      // Show CartoDB, hide satellite
+      if (map.getLayer('carto-basemap')) {
+        map.setLayoutProperty('carto-basemap', 'visibility', 'visible');
+      }
+      if (map.getLayer('satellite-tiles')) {
+        map.setLayoutProperty('satellite-tiles', 'visibility', 'none');
+      }
+    }
+  }, [isSatellite, mapReady]);
+
   // --- Cursor for placement tools ---
   useEffect(() => {
     const map = mapRef.current;
@@ -537,6 +581,13 @@ export function MapCanvas() {
 
           <div className="top-bar-spacer" />
 
+          <button
+            className={`top-bar-btn ${isSatellite ? 'top-bar-btn--satellite-active' : ''}`}
+            onClick={() => setIsSatellite(!isSatellite)}
+            title={isSatellite ? 'Street view' : 'Satellite view'}
+          >
+            🛰 {isSatellite ? 'Street' : 'Satellite'}
+          </button>
           <ExportPanel />
           <ScadaIndicator />
 

@@ -1,31 +1,44 @@
 /**
- * Demo loader — load sample networks for Ayodhya or Bhubaneswar.
+ * Demo loader — load sample networks for multiple cities.
  */
 import { useState } from 'react';
 import { useNetworkStore } from '../store/networkStore';
 import { createAyodhyaNetwork, SCENARIO_LABELS, type AyodhyaScenario } from '../data/ayodhya';
 import { createBhubaneswarNetwork, BBSR_SCENARIO_LABELS, type BhubaneswarScenario } from '../data/bhubaneswar';
+import { createRanchiNetwork, RANCHI_SCENARIO_LABELS, type RanchiScenario } from '../data/ranchi';
+import { createBareillyNetwork, BAREILLY_SCENARIO_LABELS, type BareillyScenario } from '../data/bareilly';
 
-type City = 'ayodhya' | 'bhubaneswar';
+type City = 'ayodhya' | 'bhubaneswar' | 'ranchi' | 'bareilly';
 
-const CITY_LABELS: Record<City, string> = {
-  ayodhya: 'Ayodhya',
-  bhubaneswar: 'Bhubaneswar',
-};
+const CITIES: { key: City; label: string }[] = [
+  { key: 'ayodhya', label: 'Ayodhya' },
+  { key: 'bhubaneswar', label: 'Bhubaneswar' },
+  { key: 'ranchi', label: 'Ranchi' },
+  { key: 'bareilly', label: 'Bareilly' },
+];
 
 export function DemoLoader() {
   const loadModel = useNetworkStore(s => s.loadModel);
   const [showPicker, setShowPicker] = useState(false);
   const [selectedCity, setSelectedCity] = useState<City>('ayodhya');
 
-  const handleLoadAyodhya = (scenario: AyodhyaScenario) => {
-    loadModel(createAyodhyaNetwork(scenario));
+  const handleLoad = (model: ReturnType<typeof createAyodhyaNetwork>) => {
+    loadModel(model);
     setShowPicker(false);
   };
 
-  const handleLoadBbsr = (scenario: BhubaneswarScenario) => {
-    loadModel(createBhubaneswarNetwork(scenario));
-    setShowPicker(false);
+  const scenarios = {
+    ayodhya: Object.entries(SCENARIO_LABELS) as [AyodhyaScenario, string][],
+    bhubaneswar: Object.entries(BBSR_SCENARIO_LABELS) as [BhubaneswarScenario, string][],
+    ranchi: Object.entries(RANCHI_SCENARIO_LABELS) as [RanchiScenario, string][],
+    bareilly: Object.entries(BAREILLY_SCENARIO_LABELS) as [BareillyScenario, string][],
+  };
+
+  const loaders = {
+    ayodhya: (k: string) => handleLoad(createAyodhyaNetwork(k as AyodhyaScenario)),
+    bhubaneswar: (k: string) => handleLoad(createBhubaneswarNetwork(k as BhubaneswarScenario)),
+    ranchi: (k: string) => handleLoad(createRanchiNetwork(k as RanchiScenario)),
+    bareilly: (k: string) => handleLoad(createBareillyNetwork(k as BareillyScenario)),
   };
 
   return (
@@ -38,39 +51,27 @@ export function DemoLoader() {
         <>
           <div className="export-dropdown-backdrop" onClick={() => setShowPicker(false)} />
           <div className="demo-loader-menu">
-            {/* City tabs */}
             <div className="demo-city-tabs">
-              {(Object.entries(CITY_LABELS) as [City, string][]).map(([key, label]) => (
+              {CITIES.map(c => (
                 <button
-                  key={key}
-                  className={`demo-city-tab ${selectedCity === key ? 'active' : ''}`}
-                  onClick={() => setSelectedCity(key)}
+                  key={c.key}
+                  className={`demo-city-tab ${selectedCity === c.key ? 'active' : ''}`}
+                  onClick={() => setSelectedCity(c.key)}
                 >
-                  {label}
+                  {c.label}
                 </button>
               ))}
             </div>
 
-            {/* Scenarios for selected city */}
             <div className="demo-loader-header">
-              {selectedCity === 'ayodhya' ? 'AMRUT 2.0 Ayodhya' : 'AMRUT 2.0 Bhubaneswar'} — Select Scenario
+              AMRUT 2.0 {CITIES.find(c => c.key === selectedCity)?.label} — Select Scenario
             </div>
 
-            {selectedCity === 'ayodhya' && (
-              (Object.entries(SCENARIO_LABELS) as [AyodhyaScenario, string][]).map(([key, label]) => (
-                <button key={key} className="demo-loader-item" onClick={() => handleLoadAyodhya(key)}>
-                  {label}
-                </button>
-              ))
-            )}
-
-            {selectedCity === 'bhubaneswar' && (
-              (Object.entries(BBSR_SCENARIO_LABELS) as [BhubaneswarScenario, string][]).map(([key, label]) => (
-                <button key={key} className="demo-loader-item" onClick={() => handleLoadBbsr(key)}>
-                  {label}
-                </button>
-              ))
-            )}
+            {scenarios[selectedCity].map(([key, label]) => (
+              <button key={key} className="demo-loader-item" onClick={() => loaders[selectedCity](key)}>
+                {label}
+              </button>
+            ))}
           </div>
         </>
       )}
