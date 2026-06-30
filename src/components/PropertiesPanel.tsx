@@ -1,4 +1,6 @@
 import { useNetworkStore } from '../store/networkStore';
+import { getCostPerMeter, MATERIAL_LABELS } from '../data/pipeCosts';
+import type { PipeMaterial } from '../model/types';
 
 export function PropertiesPanel() {
   const selectedId = useNetworkStore(s => s.selectedElementId);
@@ -262,6 +264,15 @@ export function PropertiesPanel() {
           <FieldRow label="Minor Loss" value={pipe.minorLoss} unit=""
             onChange={v => updatePipe(pipe.id, { minorLoss: v })} />
           <div className="field-row">
+            <span className="field-label">Material</span>
+            <select className="field-select" value={pipe.material || 'DI'}
+              onChange={e => updatePipe(pipe.id, { material: e.target.value as PipeMaterial })}>
+              {(Object.keys(MATERIAL_LABELS) as PipeMaterial[]).map(m => (
+                <option key={m} value={m}>{MATERIAL_LABELS[m]}</option>
+              ))}
+            </select>
+          </div>
+          <div className="field-row">
             <span className="field-label">Status</span>
             <select className="field-select" value={pipe.status}
               onChange={e => updatePipe(pipe.id, { status: e.target.value as 'Open' | 'Closed' | 'CV' })}>
@@ -269,6 +280,10 @@ export function PropertiesPanel() {
               <option value="Closed">Closed</option>
               <option value="CV">Check Valve</option>
             </select>
+          </div>
+          <div className="field-row" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+            <span className="field-label">Cost</span>
+            <span>₹{(pipe.length * getCostPerMeter(pipe.diameter, pipe.material || 'DI')).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
           </div>
         </div>
         {linkResult && (

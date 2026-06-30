@@ -90,14 +90,15 @@ export function buildLinkFeatures(
     return 'fail';
   };
 
-  const addLink = (id: string, fromId: string, toId: string, type: LinkFeatureProps['type'], closed: boolean) => {
+  const addLink = (id: string, fromId: string, toId: string, type: LinkFeatureProps['type'], closed: boolean, vertices?: [number, number][]) => {
     const from = nodeMap.get(fromId);
     const to = nodeMap.get(toId);
     if (!from || !to) return;
     const lr = getLinkResult(id);
+    const coords: [number, number][] = [[from.x, from.y], ...(vertices || []), [to.x, to.y]];
     features.push({
       type: 'Feature',
-      geometry: { type: 'LineString', coordinates: [[from.x, from.y], [to.x, to.y]] },
+      geometry: { type: 'LineString', coordinates: coords },
       properties: {
         id,
         type,
@@ -111,7 +112,7 @@ export function buildLinkFeatures(
     });
   };
 
-  for (const p of model.pipes) addLink(p.id, p.fromNode, p.toNode, 'pipe', p.status === 'Closed');
+  for (const p of model.pipes) addLink(p.id, p.fromNode, p.toNode, 'pipe', p.status === 'Closed', p.vertices);
   for (const p of model.pumps) addLink(p.id, p.fromNode, p.toNode, 'pump', false);
   for (const v of model.valves) addLink(v.id, v.fromNode, v.toNode, 'valve', false);
 

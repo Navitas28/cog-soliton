@@ -58,6 +58,9 @@ interface NetworkState {
   updatePump: (id: string, updates: Partial<Pump>) => void;
   updateValve: (id: string, updates: Partial<Valve>) => void;
   moveNode: (id: string, x: number, y: number) => void;
+  addPipeVertex: (pipeId: string, index: number, x: number, y: number) => void;
+  movePipeVertex: (pipeId: string, index: number, x: number, y: number) => void;
+  deletePipeVertex: (pipeId: string, index: number) => void;
   deleteElement: (id: string, type: string) => void;
 
   // Actions — patterns
@@ -277,6 +280,51 @@ export const useNetworkStore = create<NetworkState>()(
     set({ model });
   },
 
+  addPipeVertex: (pipeId, index, x, y) => {
+    const state = get();
+    set({
+      model: {
+        ...state.model,
+        pipes: state.model.pipes.map(p => {
+          if (p.id !== pipeId) return p;
+          const vertices = [...(p.vertices || [])];
+          vertices.splice(index, 0, [x, y]);
+          return { ...p, vertices };
+        }),
+      },
+    });
+  },
+
+  movePipeVertex: (pipeId, index, x, y) => {
+    const state = get();
+    set({
+      model: {
+        ...state.model,
+        pipes: state.model.pipes.map(p => {
+          if (p.id !== pipeId) return p;
+          const vertices = [...(p.vertices || [])];
+          vertices[index] = [x, y];
+          return { ...p, vertices };
+        }),
+      },
+    });
+  },
+
+  deletePipeVertex: (pipeId, index) => {
+    const state = get();
+    set({
+      model: {
+        ...state.model,
+        pipes: state.model.pipes.map(p => {
+          if (p.id !== pipeId) return p;
+          const vertices = [...(p.vertices || [])];
+          vertices.splice(index, 1);
+          return { ...p, vertices: vertices.length > 0 ? vertices : undefined };
+        }),
+      },
+    });
+  },
+
   deleteElement: (id, type) => {
     const state = get();
     const model = { ...state.model };
@@ -406,3 +454,15 @@ export const useNetworkStore = create<NetworkState>()(
     },
   ),
 );
+
+// --- Auto-save to localStorage (debounced 500ms) ---
+let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
+let prevModelRef: NetworkModel | null = null;
+useNetworkStore.subscribe((state) => {
+  if (state.model === prevModelRef) return;
+  prevModelRef = state.model;
+  if (autoSaveTimer) clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(() => {
+    try { localStorage.setItem('soliton-autosave', JSON.stringify(state.model)); } catch { /* quota */ }
+  }, 500);
+});

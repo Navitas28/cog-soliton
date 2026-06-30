@@ -11,6 +11,11 @@ import { ExportPanel } from './ExportPanel';
 import { ScadaIndicator } from './ScadaPanel';
 import { buildNodeFeatures, buildLinkFeatures, buildLabelFeatures, offlineBlankStyle, countPressurePassing, countVelocityPassing } from './mapHelpers';
 import { MapLegend } from './ColorLegend';
+import { ComparisonDashboard } from './ComparisonDashboard';
+import { ShortcutOverlay } from './ShortcutOverlay';
+import { SearchBox } from './SearchBox';
+import { CostPanel } from './CostPanel';
+import { OptimizerPanel } from './OptimizerPanel';
 import { loadNetworkIcons } from './mapIcons';
 import { AYODHYA_OUTLINE } from '../data/ayodhyaOutline';
 import { BHUBANESWAR_OUTLINE } from '../data/bhubaneswarOutline';
@@ -40,6 +45,7 @@ export function MapCanvas() {
 
   // Drag state
   const draggingNodeIdRef = useRef<string | null>(null);
+  const draggingVertexRef = useRef<{ pipeId: string; index: number } | null>(null);
   const didDragRef = useRef(false);
 
   // Store selectors
@@ -68,6 +74,11 @@ export function MapCanvas() {
 
   const [showInp, setShowInp] = useState(false);
   const [isSatellite, setIsSatellite] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [showCost, setShowCost] = useState(false);
+  const [showOptimizer, setShowOptimizer] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
 
   // Result helpers
   const getNodeResult = useCallback((nodeId: string): NodeResult | undefined => {
@@ -104,7 +115,10 @@ export function MapCanvas() {
         e.preventDefault(); deleteElement(selectedId, selectedType); return;
       }
 
-      if (key === 'escape') { selectElement(null, null); setPipeDrawingFrom(null); return; }
+      if (key === 'escape') { selectElement(null, null); setPipeDrawingFrom(null); setShowSearch(false); return; }
+
+      if (e.key === '?') { e.preventDefault(); setShowShortcuts(v => !v); return; }
+      if (key === '/' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); setShowSearch(true); return; }
 
       if (key === 'z' && (e.ctrlKey || e.metaKey) && !e.shiftKey) {
         e.preventDefault(); (useNetworkStore as any).temporal.getState().undo(); return;
@@ -154,6 +168,7 @@ export function MapCanvas() {
       map.addSource(SRC_LINKS, { type: 'geojson', data: EMPTY_FC });
       map.addSource(SRC_NODES, { type: 'geojson', data: EMPTY_FC });
       map.addSource(SRC_LABELS, { type: 'geojson', data: EMPTY_FC });
+      map.addSource('network-vertices', { type: 'geojson', data: EMPTY_FC });
 
       // Link color expression
       const linkColor: maplibregl.ExpressionSpecification = [
@@ -289,6 +304,17 @@ export function MapCanvas() {
         },
       });
 
+      // Vertex handles — shown when a pipe is selected
+      map.addLayer({
+        id: 'vertex-handles', type: 'circle', source: 'network-vertices',
+        paint: {
+          'circle-radius': 6,
+          'circle-color': '#fff',
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#3a5fcf',
+        },
+      });
+
       setMapReady(true);
     });
 
@@ -320,7 +346,28 @@ export function MapCanvas() {
     if (nodeSrc) nodeSrc.setData(buildNodeFeatures(model, getNodeResult, selectedId, pipeDrawingFrom, draggingNodeIdRef.current, monitoredNodeIds));
     if (linkSrc) linkSrc.setData(buildLinkFeatures(model, getLinkResult, selectedId));
     if (labelSrc) labelSrc.setData(buildLabelFeatures(model, getLinkResult));
-  }, [model, selectedId, pipeDrawingFrom, mapReady, getNodeResult, getLinkResult, solveResult, epsResult, epsTimeIndex, telemetryData, scadaReadings]);
+
+    const vertexSrc = map.getSource('network-vertices') as maplibregl.GeoJSONSource;
+    if (vertexSrc) {
+      if (selectedType === 'pipe' && selectedId) {
+        const pipe = model.pipes.find(p => p.id === selectedId);
+        if (pipe && pipe.vertices && pipe.vertices.length > 0) {
+          vertexSrc.setData({
+            type: 'FeatureCollection',
+            features: pipe.vertices.map((v, i) => ({
+              type: 'Feature' as const,
+              geometry: { type: 'Point' as const, coordinates: [v[0], v[1]] },
+              properties: { pipeId: pipe.id, vertexIndex: i },
+            })),
+          });
+        } else {
+          vertexSrc.setData(EMPTY_FC);
+        }
+      } else {
+        vertexSrc.setData(EMPTY_FC);
+      }
+    }
+  }, [model, selectedId, selectedType, pipeDrawingFrom, mapReady, getNodeResult, getLinkResult, solveResult, epsResult, epsTimeIndex, telemetryData, scadaReadings]);
 
   // --- Fit to network on model load + toggle Ayodhya overlay ---
   useEffect(() => {
@@ -408,6 +455,10 @@ export function MapCanvas() {
 
       // Select tool
       if (tool === 'select') {
+        // Check vertex handles (don't propagate click if hit)
+        const vertexHits = map.queryRenderedFeatures(e.point, { layers: ['vertex-handles'] });
+        if (vertexHits.length > 0) return;
+
         // Check nodes
         const nodeFeatures = map.queryRenderedFeatures(e.point, { layers: [NODE_LAYER] });
         if (nodeFeatures.length > 0) {
@@ -416,6 +467,34 @@ export function MapCanvas() {
           useNetworkStore.getState().selectElement(id, type);
           return;
         }
+
+        // Insert vertex on selected pipe click
+        const currentState = useNetworkStore.getState();
+        if (currentState.selectedElementType === 'pipe' && currentState.selectedElementId) {
+          const selId = currentState.selectedElementId;
+          const linkHits = map.queryRenderedFeatures(e.point, { layers: ['links-line', 'links-line-closed'] });
+          const hitPipe = linkHits.find(f => f.properties?.id === selId);
+          if (hitPipe) {
+            const pipe = currentState.model.pipes.find(p => p.id === selId);
+            if (pipe) {
+              const allNodes = [...currentState.model.junctions, ...currentState.model.reservoirs, ...currentState.model.tanks];
+              const from = allNodes.find(n => n.id === pipe.fromNode);
+              const to = allNodes.find(n => n.id === pipe.toNode);
+              if (from && to) {
+                const coords: [number, number][] = [[from.x, from.y], ...(pipe.vertices || []), [to.x, to.y]];
+                let bestIdx = 0;
+                let bestDist = Infinity;
+                for (let i = 0; i < coords.length - 1; i++) {
+                  const d = distToSegment(lngLat.lng, lngLat.lat, coords[i], coords[i + 1]);
+                  if (d < bestDist) { bestDist = d; bestIdx = i; }
+                }
+                useNetworkStore.getState().addPipeVertex(selId, bestIdx, lngLat.lng, lngLat.lat);
+              }
+            }
+            return;
+          }
+        }
+
         // Check links
         const linkFeatures = map.queryRenderedFeatures(e.point, { layers: ['links-line', 'links-line-closed'] });
         if (linkFeatures.length > 0) {
@@ -441,6 +520,17 @@ export function MapCanvas() {
     const onMouseDown = (e: maplibregl.MapMouseEvent) => {
       if (useNetworkStore.getState().activeTool !== 'select') return;
 
+      // Check vertex handles first
+      const vertexFeatures = map.queryRenderedFeatures(e.point, { layers: ['vertex-handles'] });
+      if (vertexFeatures.length > 0) {
+        const props = vertexFeatures[0].properties;
+        draggingVertexRef.current = { pipeId: props?.pipeId as string, index: props?.vertexIndex as number };
+        didDragRef.current = false;
+        map.dragPan.disable();
+        map.getCanvas().style.cursor = 'grabbing';
+        return;
+      }
+
       const nodeFeatures = map.queryRenderedFeatures(e.point, { layers: [NODE_LAYER] });
       if (nodeFeatures.length === 0) return;
 
@@ -452,6 +542,17 @@ export function MapCanvas() {
     };
 
     const onMouseMove = (e: maplibregl.MapMouseEvent) => {
+      if (draggingVertexRef.current) {
+        didDragRef.current = true;
+        const lngLat = e.lngLat;
+        useNetworkStore.getState().movePipeVertex(
+          draggingVertexRef.current.pipeId,
+          draggingVertexRef.current.index,
+          lngLat.lng,
+          lngLat.lat,
+        );
+        return;
+      }
       if (!draggingNodeIdRef.current) return;
       didDragRef.current = true;
       const lngLat = e.lngLat;
@@ -459,6 +560,12 @@ export function MapCanvas() {
     };
 
     const onMouseUp = () => {
+      if (draggingVertexRef.current) {
+        draggingVertexRef.current = null;
+        map.dragPan.enable();
+        map.getCanvas().style.cursor = '';
+        return;
+      }
       if (draggingNodeIdRef.current) {
         draggingNodeIdRef.current = null;
         map.dragPan.enable();
@@ -467,6 +574,7 @@ export function MapCanvas() {
     };
 
     map.on('mousedown', NODE_LAYER, onMouseDown);
+    map.on('mousedown', 'vertex-handles', onMouseDown);
     map.on('mousemove', onMouseMove);
     map.on('mouseup', onMouseUp);
 
@@ -477,11 +585,30 @@ export function MapCanvas() {
     map.on('mouseleave', NODE_LAYER, () => {
       if (!draggingNodeIdRef.current) map.getCanvas().style.cursor = '';
     });
+    map.on('mouseenter', 'vertex-handles', () => {
+      map.getCanvas().style.cursor = 'grab';
+    });
+    map.on('mouseleave', 'vertex-handles', () => {
+      if (!draggingVertexRef.current) map.getCanvas().style.cursor = '';
+    });
+
+    // Double-click to delete vertex
+    const onDblClick = (e: maplibregl.MapMouseEvent) => {
+      const vertexFeatures = map.queryRenderedFeatures(e.point, { layers: ['vertex-handles'] });
+      if (vertexFeatures.length > 0) {
+        const props = vertexFeatures[0].properties;
+        useNetworkStore.getState().deletePipeVertex(props?.pipeId as string, props?.vertexIndex as number);
+        e.preventDefault();
+      }
+    };
+    map.on('dblclick', 'vertex-handles', onDblClick);
 
     return () => {
       map.off('mousedown', NODE_LAYER, onMouseDown);
+      map.off('mousedown', 'vertex-handles', onMouseDown);
       map.off('mousemove', onMouseMove);
       map.off('mouseup', onMouseUp);
+      map.off('dblclick', 'vertex-handles', onDblClick);
     };
   }, [mapReady]);
 
@@ -521,6 +648,46 @@ export function MapCanvas() {
       }
     }
   }, [isSatellite, mapReady]);
+
+  // --- Dark basemap toggle ---
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+
+    const applyTheme = (theme: string) => {
+      if (theme === 'dark') {
+        if (!map.getSource('carto-dark')) {
+          map.addSource('carto-dark', {
+            type: 'raster',
+            tiles: ['https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}@2x.png'],
+            tileSize: 256,
+            maxzoom: 19,
+          });
+          map.addLayer({
+            id: 'carto-dark-basemap',
+            type: 'raster',
+            source: 'carto-dark',
+            paint: { 'raster-opacity': 1 },
+          }, 'outline-fill');
+        } else {
+          map.setLayoutProperty('carto-dark-basemap', 'visibility', 'visible');
+        }
+        if (map.getLayer('carto-basemap')) map.setLayoutProperty('carto-basemap', 'visibility', 'none');
+      } else {
+        if (map.getLayer('carto-dark-basemap')) map.setLayoutProperty('carto-dark-basemap', 'visibility', 'none');
+        if (map.getLayer('carto-basemap') && !isSatellite) map.setLayoutProperty('carto-basemap', 'visibility', 'visible');
+      }
+    };
+
+    // Apply on mount
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    applyTheme(currentTheme);
+
+    // Listen for toggles
+    const handler = (e: Event) => applyTheme((e as CustomEvent).detail);
+    window.addEventListener('soliton-theme-change', handler);
+    return () => window.removeEventListener('soliton-theme-change', handler);
+  }, [mapReady, isSatellite]);
 
   // --- Cursor for placement tools ---
   useEffect(() => {
@@ -568,6 +735,17 @@ export function MapCanvas() {
             </button>
           )}
 
+          <button className="top-bar-btn" onClick={() => setShowCost(!showCost)}
+            data-active={showCost || undefined}>
+            💰 Cost
+          </button>
+          <button className="top-bar-btn" onClick={() => setShowOptimizer(true)}>
+            ⚡ Optimize
+          </button>
+          <button className="top-bar-btn" onClick={() => setShowComparison(true)}>
+            📊 Compare
+          </button>
+
           {/* Status badge inline */}
           {hasResults && pressureStats && velocityStats && (
             <span className={`status-badge-inline ${badgeClass}`}>
@@ -589,6 +767,13 @@ export function MapCanvas() {
             🛰 {isSatellite ? 'Street' : 'Satellite'}
           </button>
           <ExportPanel />
+          {showSearch ? (
+            <SearchBox mapRef={mapRef} onClose={() => setShowSearch(false)} />
+          ) : (
+            <button className="top-bar-btn" onClick={() => setShowSearch(true)} title="Search (/)">
+              🔍
+            </button>
+          )}
           <ScadaIndicator />
 
           {epsResult && (
@@ -645,6 +830,15 @@ export function MapCanvas() {
           Drawing {activeTool} from <strong>{pipeDrawingFrom}</strong> — click another node
         </div>
       )}
+
+      {showCost && <CostPanel onClose={() => setShowCost(false)} />}
+      {showOptimizer && <OptimizerPanel onClose={() => setShowOptimizer(false)} />}
+
+      {/* Comparison dashboard */}
+      {showComparison && <ComparisonDashboard onClose={() => setShowComparison(false)} />}
+
+      {/* Shortcut overlay */}
+      {showShortcuts && <ShortcutOverlay onClose={() => setShowShortcuts(false)} />}
     </div>
   );
 }
@@ -653,4 +847,13 @@ function formatTime(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+}
+
+/** Distance from point to line segment (in coordinate units) */
+function distToSegment(px: number, py: number, a: [number, number], b: [number, number]): number {
+  const dx = b[0] - a[0], dy = b[1] - a[1];
+  const lenSq = dx * dx + dy * dy;
+  const t = lenSq === 0 ? 0 : Math.max(0, Math.min(1, ((px - a[0]) * dx + (py - a[1]) * dy) / lenSq));
+  const cx = a[0] + t * dx, cy = a[1] + t * dy;
+  return Math.sqrt((px - cx) ** 2 + (py - cy) ** 2);
 }

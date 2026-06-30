@@ -33,6 +33,7 @@ export interface Tank {
 }
 
 export type PipeStatus = 'Open' | 'Closed' | 'CV';
+export type PipeMaterial = 'DI' | 'HDPE' | 'PVC';
 
 export interface Pipe {
   id: string;
@@ -44,6 +45,7 @@ export interface Pipe {
   roughness: number;   // Hazen-Williams C coefficient
   minorLoss: number;   // minor loss coefficient
   status: PipeStatus;
+  material?: PipeMaterial; // pipe material (default 'DI' if absent)
   vertices?: [number, number][]; // intermediate bend points [x(lng), y(lat)]
 }
 

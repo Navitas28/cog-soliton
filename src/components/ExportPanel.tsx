@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { useNetworkStore } from '../store/networkStore';
 import type { NodeResult, LinkResult } from '../engine/engine';
+import { generateReport } from '../export/reportGenerator';
 
 export function ExportPanel() {
   const model = useNetworkStore(s => s.model);
@@ -154,6 +155,22 @@ export function ExportPanel() {
     win.print();
   };
 
+  const exportPdf = () => {
+    if (!nodeResults || !linkResults) return;
+    setOpen(false);
+    // Try to capture map screenshot
+    let mapImageDataUrl: string | undefined;
+    try {
+      const mapCanvas = document.querySelector('.map-container canvas') as HTMLCanvasElement;
+      if (mapCanvas) mapImageDataUrl = mapCanvas.toDataURL('image/png');
+    } catch { /* canvas tainted or not available */ }
+    generateReport({
+      model,
+      results: { nodeResults, linkResults },
+      mapImageDataUrl,
+    });
+  };
+
   if (!hasAnything) return null;
 
   return (
@@ -175,6 +192,9 @@ export function ExportPanel() {
                 </button>
                 <button className="export-dropdown-item" onClick={printSummary}>
                   Print Summary
+                </button>
+                <button className="export-dropdown-item" onClick={exportPdf}>
+                  PDF Report
                 </button>
               </>
             )}

@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { useNetworkStore, type DrawingTool } from '../store/networkStore';
+import { UndoRedoBadge } from './UndoRedoBadge';
 
 const nodeTools: { id: DrawingTool; label: string; shortcut: string; icon: string }[] = [
   { id: 'select', label: 'Select', shortcut: 'S', icon: '⬚' },
@@ -16,6 +18,18 @@ const linkTools: { id: DrawingTool; label: string; shortcut: string; icon: strin
 export function Toolbar() {
   const activeTool = useNetworkStore(s => s.activeTool);
   const setActiveTool = useNetworkStore(s => s.setActiveTool);
+
+  const [isDark, setIsDark] = useState(
+    () => typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark'
+  );
+
+  const toggleDark = () => {
+    const next = isDark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('soliton-theme', next);
+    setIsDark(!isDark);
+    window.dispatchEvent(new CustomEvent('soliton-theme-change', { detail: next }));
+  };
 
   return (
     <div className="tool-rail">
@@ -60,8 +74,14 @@ export function Toolbar() {
         </button>
       ))}
 
+      <div className="tool-divider" />
+      <UndoRedoBadge />
+
       <div style={{ flex: 1 }} />
-      <div style={{ fontSize: 8, color: '#555', writingMode: 'vertical-rl', transform: 'rotate(180deg)', letterSpacing: 1 }}>
+      <button className="tool-btn" onClick={toggleDark} data-tooltip="Toggle dark mode">
+        {isDark ? '\u2600' : '\uD83C\uDF19'}
+      </button>
+      <div style={{ fontSize: 8, color: 'var(--text-muted)', writingMode: 'vertical-rl', transform: 'rotate(180deg)', letterSpacing: 1 }}>
         SOLITON
       </div>
     </div>
