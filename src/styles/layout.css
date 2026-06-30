@@ -1,0 +1,296 @@
+/* Three-panel layout — left tool rail, centre map, right properties */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  color: #1a1a2e;
+  background: #f0f2f5;
+}
+
+.app-layout {
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
+
+/* Left tool rail */
+.tool-rail {
+  width: 52px;
+  background: #1a1a2e;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0;
+  gap: 4px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.tool-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #8a8a9e;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: all 0.15s;
+}
+
+.tool-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+.tool-btn.active {
+  background: #3a5fcf;
+  color: #fff;
+}
+
+.tool-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.tool-divider {
+  width: 28px;
+  height: 1px;
+  background: rgba(255,255,255,0.15);
+  margin: 4px 0;
+}
+
+/* Centre map area */
+.map-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.map-container canvas {
+  cursor: crosshair;
+}
+
+/* Top bar over map */
+.top-bar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.top-bar > * {
+  pointer-events: auto;
+}
+
+.compute-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 6px;
+  background: #2ecc71;
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.compute-btn:hover {
+  background: #27ae60;
+}
+
+.compute-btn:disabled {
+  background: #95a5a6;
+  cursor: not-allowed;
+}
+
+.solve-error {
+  padding: 6px 12px;
+  background: #e74c3c;
+  color: #fff;
+  border-radius: 6px;
+  font-size: 13px;
+  max-width: 500px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-badge {
+  padding: 4px 10px;
+  background: rgba(255,255,255,0.95);
+  border-radius: 4px;
+  font-size: 12px;
+  color: #666;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
+/* Right properties panel */
+.properties-panel {
+  width: 320px;
+  background: #fff;
+  border-left: 1px solid #e0e0e0;
+  overflow-y: auto;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.panel-header {
+  padding: 12px 16px;
+  background: #f7f8fa;
+  border-bottom: 1px solid #e0e0e0;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #666;
+}
+
+.panel-section {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.panel-section h4 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #999;
+  margin-bottom: 8px;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.field-label {
+  width: 110px;
+  font-size: 13px;
+  color: #555;
+  flex-shrink: 0;
+}
+
+.field-input {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+  background: #fafafa;
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: #3a5fcf;
+  background: #fff;
+}
+
+.field-unit {
+  width: 40px;
+  font-size: 11px;
+  color: #999;
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
+/* Result indicator */
+.result-indicator {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.result-pass {
+  background: #d4edda;
+  color: #155724;
+}
+
+.result-fail {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* INP viewer */
+.inp-viewer {
+  position: absolute;
+  bottom: 12px;
+  right: 332px;
+  z-index: 5;
+}
+
+.inp-toggle {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  background: rgba(26, 26, 46, 0.85);
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.inp-content {
+  position: absolute;
+  bottom: 36px;
+  right: 0;
+  width: 500px;
+  max-height: 400px;
+  overflow: auto;
+  background: rgba(26, 26, 46, 0.95);
+  color: #e0e0e0;
+  padding: 12px;
+  border-radius: 6px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre;
+}
+
+/* Delete button */
+.delete-btn {
+  padding: 6px 16px;
+  border: 1px solid #e74c3c;
+  border-radius: 4px;
+  background: transparent;
+  color: #e74c3c;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.delete-btn:hover {
+  background: #e74c3c;
+  color: #fff;
+}
+
+/* Select dropdown */
+.field-select {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+  background: #fafafa;
+}
