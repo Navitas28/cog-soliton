@@ -14,40 +14,120 @@ export function PropertiesPanel() {
   const updateValve = useNetworkStore(s => s.updateValve);
   const deleteElement = useNetworkStore(s => s.deleteElement);
 
+  const solveResult = useNetworkStore(s => s.solveResult);
+  const epsResult = useNetworkStore(s => s.epsResult);
+  const getNodeResultAtTimeForCount = useNetworkStore(s => s.getNodeResultAtTime);
+  const getLinkResultAtTimeForCount = useNetworkStore(s => s.getLinkResultAtTime);
+
   if (!selectedId || !selectedType) {
+    const dc = model.designCriteria;
+    const totalNodes = model.junctions.length + model.reservoirs.length + model.tanks.length;
+    const totalLinks = model.pipes.length + model.pumps.length + model.valves.length;
+    const isSmallNetwork = totalNodes + totalLinks < 5;
+    const hasResults = !!(solveResult || epsResult);
+
+    // Compute compliance if results exist
+    let pressurePassing = 0;
+    let velocityPassing = 0;
+    if (hasResults) {
+      for (const j of model.junctions) {
+        const nr = getNodeResultAtTimeForCount(j.id);
+        if (nr && nr.pressure >= dc.residualPressureFloor) pressurePassing++;
+      }
+      for (const p of model.pipes) {
+        const lr = getLinkResultAtTimeForCount(p.id);
+        if (lr) {
+          const v = Math.abs(lr.velocity);
+          if (v >= dc.velocityMin && v <= dc.velocityMax) velocityPassing++;
+        }
+      }
+    }
+
     return (
       <div className="properties-panel">
         <div className="panel-header">Properties</div>
-        <div className="panel-section" style={{ color: '#999', fontSize: 13 }}>
-          Select an element to edit its properties.
+
+        <div className="panel-section" style={{ color: '#888', fontSize: 13 }}>
+          Select an element on the map to edit its properties.
         </div>
+
+        {/* Quick-start guide for new users */}
+        {isSmallNetwork && (
+          <div className="panel-section">
+            <h4>Getting Started</h4>
+            <div className="quick-start">
+              <div className="quick-start-step"><span className="step-num">1</span> Place nodes using toolbar: <strong>R</strong> = Reservoir, <strong>J</strong> = Junction, <strong>T</strong> = Tank</div>
+              <div className="quick-start-step"><span className="step-num">2</span> Connect with <strong>P</strong> = Pipe, <strong>U</strong> = Pump, <strong>V</strong> = Valve</div>
+              <div className="quick-start-step"><span className="step-num">3</span> Set demands on junctions in this panel</div>
+              <div className="quick-start-step"><span className="step-num">4</span> Click <strong>Compute</strong> to run hydraulic analysis</div>
+              <div className="quick-start-step"><span className="step-num">5</span> Green = pass, Red = fail</div>
+            </div>
+          </div>
+        )}
+
+        {/* Network summary */}
         <div className="panel-section">
-          <h4>Network Summary</h4>
+          <h4>Network</h4>
           <div className="field-row">
-            <span className="field-label">Junctions</span>
-            <span>{model.junctions.length}</span>
+            <span className="field-label">Nodes</span>
+            <span>{totalNodes} ({model.reservoirs.length} res, {model.tanks.length} tank, {model.junctions.length} junc)</span>
           </div>
           <div className="field-row">
-            <span className="field-label">Reservoirs</span>
-            <span>{model.reservoirs.length}</span>
-          </div>
-          <div className="field-row">
-            <span className="field-label">Tanks</span>
-            <span>{model.tanks.length}</span>
-          </div>
-          <div className="field-row">
-            <span className="field-label">Pipes</span>
-            <span>{model.pipes.length}</span>
-          </div>
-          <div className="field-row">
-            <span className="field-label">Pumps</span>
-            <span>{model.pumps.length}</span>
-          </div>
-          <div className="field-row">
-            <span className="field-label">Valves</span>
-            <span>{model.valves.length}</span>
+            <span className="field-label">Links</span>
+            <span>{totalLinks} ({model.pipes.length} pipe, {model.pumps.length} pump, {model.valves.length} valve)</span>
           </div>
         </div>
+
+        {/* Design criteria quick-ref */}
+        <div className="panel-section">
+          <h4>Design Criteria</h4>
+          <div className="field-row">
+            <span className="field-label">Pressure floor</span>
+            <span>{dc.residualPressureFloor} m</span>
+          </div>
+          <div className="field-row">
+            <span className="field-label">Velocity band</span>
+            <span>{dc.velocityMin}–{dc.velocityMax} m/s</span>
+          </div>
+          <div className="field-row">
+            <span className="field-label">Economic band</span>
+            <span>{dc.velocityEconomicMin}–{dc.velocityEconomicMax} m/s</span>
+          </div>
+          <div className="field-row">
+            <span className="field-label">LPCD</span>
+            <span>{dc.lpcd}</span>
+          </div>
+          <div className="field-row">
+            <span className="field-label">Roughness (C)</span>
+            <span>{dc.defaultRoughness}</span>
+          </div>
+        </div>
+
+        {/* Results summary when available */}
+        {hasResults && (
+          <div className="panel-section">
+            <h4>Results</h4>
+            <div className="field-row">
+              <span className="field-label">Pressure</span>
+              <span>
+                <span className={`result-indicator ${pressurePassing === model.junctions.length ? 'result-pass' : 'result-fail'}`}>
+                  {pressurePassing}/{model.junctions.length}
+                </span>
+                {' '}pass ({model.junctions.length > 0 ? (pressurePassing / model.junctions.length * 100).toFixed(0) : 0}%)
+              </span>
+            </div>
+            <div className="field-row">
+              <span className="field-label">Velocity</span>
+              <span>
+                {velocityPassing}/{model.pipes.length} in band
+              </span>
+            </div>
+            <div className="field-row">
+              <span className="field-label">Mode</span>
+              <span>{model.options.duration > 0 ? 'Extended Period (EPS)' : 'Steady State'}</span>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

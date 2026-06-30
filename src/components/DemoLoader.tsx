@@ -16,45 +16,23 @@ export function DemoLoader() {
   };
 
   return (
-    <div style={{ position: 'relative', display: 'inline-block' }}>
-      <button
-        onClick={() => setShowPicker(!showPicker)}
-        style={{
-          padding: '6px 14px', border: '1px solid #8e44ad', borderRadius: 4,
-          background: '#8e44ad', color: '#fff', cursor: 'pointer', fontSize: 12,
-          fontWeight: 600,
-        }}
-      >
-        🏛 Load Ayodhya Demo
+    <div className="demo-loader">
+      <button className="demo-loader-btn" onClick={() => setShowPicker(!showPicker)}>
+        🏛 Ayodhya {showPicker ? '▴' : '▾'}
       </button>
 
       {showPicker && (
-        <div style={{
-          position: 'absolute', top: '100%', left: 0, marginTop: 4,
-          background: '#fff', border: '1px solid #ddd', borderRadius: 6,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)', padding: 8,
-          width: 280, zIndex: 30,
-        }}>
-          <div style={{ fontSize: 11, color: '#666', marginBottom: 8, fontWeight: 600 }}>
-            AMRUT 2.0 Ayodhya — Select Scenario
+        <>
+          <div className="export-dropdown-backdrop" onClick={() => setShowPicker(false)} />
+          <div className="demo-loader-menu">
+            <div className="demo-loader-header">AMRUT 2.0 Ayodhya — Select Scenario</div>
+            {(Object.entries(SCENARIO_LABELS) as [AyodhyaScenario, string][]).map(([key, label]) => (
+              <button key={key} className="demo-loader-item" onClick={() => handleLoad(key)}>
+                {label}
+              </button>
+            ))}
           </div>
-          {(Object.entries(SCENARIO_LABELS) as [AyodhyaScenario, string][]).map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => handleLoad(key)}
-              style={{
-                display: 'block', width: '100%', textAlign: 'left',
-                padding: '8px 12px', border: 'none', borderRadius: 4,
-                background: 'transparent', cursor: 'pointer', fontSize: 13,
-                marginBottom: 2,
-              }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#f0f0f0')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        </>
       )}
     </div>
   );

@@ -3,6 +3,8 @@
  */
 import { useState, useEffect } from 'react';
 import { getWorkspace } from '../engine/engine';
+import { useNetworkStore } from '../store/networkStore';
+import { createAyodhyaNetwork } from '../data/ayodhya';
 
 export function LoadingScreen({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
@@ -10,7 +12,13 @@ export function LoadingScreen({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     getWorkspace()
-      .then(() => setReady(true))
+      .then(() => {
+        setReady(true);
+        // Auto-load Ayodhya demo and solve after WASM is ready
+        const network = createAyodhyaNetwork('11-wards');
+        useNetworkStore.getState().loadModel(network);
+        useNetworkStore.getState().solve();
+      })
       .catch(e => setError(e instanceof Error ? e.message : String(e)));
   }, []);
 

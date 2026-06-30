@@ -1,13 +1,16 @@
 import { useNetworkStore, type DrawingTool } from '../store/networkStore';
 
-const tools: { id: DrawingTool; label: string; icon: string }[] = [
-  { id: 'select', label: 'Select (S)', icon: '⬚' },
-  { id: 'reservoir', label: 'Place Reservoir (R)', icon: '▽' },
-  { id: 'junction', label: 'Place Junction (J)', icon: '●' },
-  { id: 'tank', label: 'Place Tank (T)', icon: '□' },
-  { id: 'pipe', label: 'Draw Pipe (P)', icon: '─' },
-  { id: 'pump', label: 'Draw Pump (U)', icon: '⊕' },
-  { id: 'valve', label: 'Draw Valve (V)', icon: '⊘' },
+const nodeTools: { id: DrawingTool; label: string; shortcut: string; icon: string }[] = [
+  { id: 'select', label: 'Select', shortcut: 'S', icon: '⬚' },
+  { id: 'reservoir', label: 'Reservoir', shortcut: 'R', icon: '▽' },
+  { id: 'junction', label: 'Junction', shortcut: 'J', icon: '●' },
+  { id: 'tank', label: 'Tank', shortcut: 'T', icon: '□' },
+];
+
+const linkTools: { id: DrawingTool; label: string; shortcut: string; icon: string }[] = [
+  { id: 'pipe', label: 'Pipe', shortcut: 'P', icon: '─' },
+  { id: 'pump', label: 'Pump', shortcut: 'U', icon: '⊕' },
+  { id: 'valve', label: 'Valve', shortcut: 'V', icon: '⊘' },
 ];
 
 export function Toolbar() {
@@ -16,7 +19,7 @@ export function Toolbar() {
 
   return (
     <div className="tool-rail">
-      {/* Logo slot */}
+      {/* Logo */}
       <div style={{
         width: 36, height: 36, borderRadius: 8,
         background: 'linear-gradient(135deg, #3a5fcf, #2980b9)',
@@ -26,17 +29,37 @@ export function Toolbar() {
       }}>
         S
       </div>
+
       <div className="tool-divider" />
-      {tools.map(t => (
+
+      {/* Node tools */}
+      <div className="tool-section-label">Nodes</div>
+      {nodeTools.map(t => (
         <button
           key={t.id}
           className={`tool-btn ${activeTool === t.id ? 'active' : ''}`}
           onClick={() => setActiveTool(t.id)}
-          title={t.label}
+          data-tooltip={`${t.label} (${t.shortcut})`}
         >
           {t.icon}
         </button>
       ))}
+
+      <div className="tool-divider" />
+
+      {/* Link tools */}
+      <div className="tool-section-label">Links</div>
+      {linkTools.map(t => (
+        <button
+          key={t.id}
+          className={`tool-btn ${activeTool === t.id ? 'active' : ''}`}
+          onClick={() => setActiveTool(t.id)}
+          data-tooltip={`${t.label} (${t.shortcut})`}
+        >
+          {t.icon}
+        </button>
+      ))}
+
       <div style={{ flex: 1 }} />
       <div style={{ fontSize: 8, color: '#555', writingMode: 'vertical-rl', transform: 'rotate(180deg)', letterSpacing: 1 }}>
         SOLITON

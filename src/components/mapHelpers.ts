@@ -131,9 +131,9 @@ export function buildLabelFeatures(
   for (const t of model.tanks) nodeMap.set(t.id, t);
 
   const allLinks = [
-    ...model.pipes.map(p => ({ id: p.id, from: p.fromNode, to: p.toNode })),
-    ...model.pumps.map(p => ({ id: p.id, from: p.fromNode, to: p.toNode })),
-    ...model.valves.map(v => ({ id: v.id, from: v.fromNode, to: v.toNode })),
+    ...model.pipes.map(p => ({ id: p.id, from: p.fromNode, to: p.toNode, linkType: 'pipe' })),
+    ...model.pumps.map(p => ({ id: p.id, from: p.fromNode, to: p.toNode, linkType: 'pump' })),
+    ...model.valves.map(v => ({ id: v.id, from: v.fromNode, to: v.toNode, linkType: 'valve' })),
   ];
 
   for (const link of allLinks) {
@@ -149,6 +149,7 @@ export function buildLabelFeatures(
       properties: {
         id: link.id,
         label: link.id,
+        linkType: link.linkType,
         flowLabel: lr ? `${lr.flow.toFixed(1)} LPS` : '',
       },
     });
@@ -157,18 +158,59 @@ export function buildLabelFeatures(
   return { type: 'FeatureCollection', features };
 }
 
-/** Blank offline-ready MapLibre style with glyphs for text rendering */
+/** Count junctions passing pressure floor */
+export function countPressurePassing(
+  model: NetworkModel,
+  getNodeResult: (id: string) => NodeResult | undefined,
+): { passing: number; total: number } {
+  let passing = 0;
+  const total = model.junctions.length;
+  for (const j of model.junctions) {
+    const nr = getNodeResult(j.id);
+    if (nr && nr.pressure >= model.designCriteria.residualPressureFloor) passing++;
+  }
+  return { passing, total };
+}
+
+/** Count pipes with velocity in permissible band */
+export function countVelocityPassing(
+  model: NetworkModel,
+  getLinkResult: (id: string) => LinkResult | undefined,
+): { passing: number; total: number } {
+  let passing = 0;
+  const total = model.pipes.length;
+  const dc = model.designCriteria;
+  for (const p of model.pipes) {
+    const lr = getLinkResult(p.id);
+    if (!lr) continue;
+    const v = Math.abs(lr.velocity);
+    if (v >= dc.velocityMin && v <= dc.velocityMax) passing++;
+  }
+  return { passing, total };
+}
+
+/** CartoDB Voyager basemap — clean street map with labels, free, no API key */
 export function offlineBlankStyle(): maplibregl.StyleSpecification {
   return {
     version: 8 as const,
-    // Free MapLibre demo glyphs — needed for symbol layers (text-field)
     glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
-    sources: {},
+    sources: {
+      'carto-voyager': {
+        type: 'raster',
+        tiles: [
+          'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+        ],
+        tileSize: 256,
+        maxzoom: 19,
+        attribution: '&copy; <a href="https://carto.com/">CARTO</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      },
+    },
     layers: [
       {
-        id: 'background',
-        type: 'background' as const,
-        paint: { 'background-color': '#f0f2f5' },
+        id: 'carto-basemap',
+        type: 'raster',
+        source: 'carto-voyager',
+        paint: { 'raster-opacity': 1 },
       },
     ],
   } as any;

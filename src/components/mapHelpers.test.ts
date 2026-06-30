@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildNodeFeatures, buildLinkFeatures, buildLabelFeatures, offlineBlankStyle } from './mapHelpers';
+import { buildNodeFeatures, buildLinkFeatures, buildLabelFeatures, offlineBlankStyle, countPressurePassing, countVelocityPassing } from './mapHelpers';
 import { createEmptyNetwork } from '../model/types';
 import { AYODHYA_OUTLINE } from '../data/ayodhyaOutline';
 import type { NodeResult, LinkResult } from '../engine/engine';
@@ -79,12 +79,13 @@ describe('Phase 9 — MapLibre helpers', () => {
     expect(p1.properties.hasResult).toBe(true);
   });
 
-  it('offline blank style is valid MapLibre style object', () => {
+  it('basemap style is valid MapLibre style object with CartoDB tiles', () => {
     const style = offlineBlankStyle();
     expect(style.version).toBe(8);
     expect(style.sources).toBeDefined();
     expect(style.layers).toHaveLength(1);
-    expect(style.layers[0].type).toBe('background');
+    expect(style.layers[0].type).toBe('raster');
+    expect((style.sources as any)['carto-voyager']).toBeDefined();
   });
 
   it('ayodhyaOutline GeoJSON is valid FeatureCollection', () => {
@@ -112,5 +113,44 @@ describe('Phase 9 — MapLibre helpers', () => {
     expect(labels.features).toHaveLength(1);
     expect(labels.features[0].geometry.coordinates).toEqual([1, 2]); // midpoint of (2,4)→(0,0)
     expect(labels.features[0].properties?.label).toBe('P1');
+  });
+
+  it('countPressurePassing counts junctions above pressure floor', () => {
+    const model = createEmptyNetwork('test');
+    model.designCriteria.residualPressureFloor = 17;
+    model.junctions.push(
+      { id: 'J1', x: 0, y: 0, elevation: 10, baseDemand: 5, patternId: '' },
+      { id: 'J2', x: 1, y: 0, elevation: 10, baseDemand: 5, patternId: '' },
+      { id: 'J3', x: 2, y: 0, elevation: 10, baseDemand: 5, patternId: '' },
+    );
+    const results = new Map<string, NodeResult>([
+      ['J1', { pressure: 20, head: 30, demand: 5, tankLevel: 0 }],
+      ['J2', { pressure: 10, head: 20, demand: 3, tankLevel: 0 }],
+      ['J3', { pressure: 17, head: 27, demand: 4, tankLevel: 0 }],
+    ]);
+
+    const { passing, total } = countPressurePassing(model, id => results.get(id));
+    expect(total).toBe(3);
+    expect(passing).toBe(2); // J1 (20>=17) and J3 (17>=17)
+  });
+
+  it('countVelocityPassing counts pipes within permissible band', () => {
+    const model = createEmptyNetwork('test');
+    model.designCriteria.velocityMin = 0.6;
+    model.designCriteria.velocityMax = 2.5;
+    model.junctions.push({ id: 'J1', x: 0, y: 0, elevation: 0, baseDemand: 0, patternId: '' });
+    model.junctions.push({ id: 'J2', x: 1, y: 0, elevation: 0, baseDemand: 0, patternId: '' });
+    model.pipes.push(
+      { id: 'P1', fromNode: 'J1', toNode: 'J2', length: 100, lengthOverride: true, diameter: 200, roughness: 130, minorLoss: 0, status: 'Open' },
+      { id: 'P2', fromNode: 'J1', toNode: 'J2', length: 100, lengthOverride: true, diameter: 200, roughness: 130, minorLoss: 0, status: 'Open' },
+    );
+    const results = new Map<string, LinkResult>([
+      ['P1', { flow: 5, velocity: 1.2, headloss: 2 }],   // in band
+      ['P2', { flow: 1, velocity: 0.3, headloss: 0.5 }], // outside band
+    ]);
+
+    const { passing, total } = countVelocityPassing(model, id => results.get(id));
+    expect(total).toBe(2);
+    expect(passing).toBe(1);
   });
 });

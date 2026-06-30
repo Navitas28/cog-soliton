@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNetworkStore } from '../store/networkStore';
 
 export interface LegendRange {
@@ -36,6 +37,100 @@ export function computeFlowRange(
   return { min, max: max > 0 ? Math.ceil(max) : 10 };
 }
 
+/** Design-view map legend — explains node/pipe colors and symbols */
+export function MapLegend() {
+  const model = useNetworkStore(s => s.model);
+  const solveResult = useNetworkStore(s => s.solveResult);
+  const epsResult = useNetworkStore(s => s.epsResult);
+  const [collapsed, setCollapsed] = useState(false);
+
+  const dc = model.designCriteria;
+  const hasResults = !!(solveResult || epsResult);
+
+  return (
+    <div className="map-legend">
+      <button className="map-legend-toggle" onClick={() => setCollapsed(!collapsed)}>
+        Legend {collapsed ? '▸' : '▾'}
+      </button>
+      {!collapsed && (
+        <div className="map-legend-body">
+          <div className="map-legend-section">
+            <div className="map-legend-section-title">Nodes</div>
+            <div className="map-legend-row">
+              <span className="map-legend-swatch" style={{ background: '#2980b9' }} />
+              <span>Reservoir</span>
+            </div>
+            <div className="map-legend-row">
+              <span className="map-legend-swatch" style={{ background: '#8e44ad' }} />
+              <span>Tank</span>
+            </div>
+            {hasResults ? (
+              <>
+                <div className="map-legend-row">
+                  <span className="map-legend-swatch" style={{ background: '#2ecc71' }} />
+                  <span>Junction — pass ({'\u2265'}{dc.residualPressureFloor}m)</span>
+                </div>
+                <div className="map-legend-row">
+                  <span className="map-legend-swatch" style={{ background: '#e74c3c' }} />
+                  <span>Junction — fail ({'<'}{dc.residualPressureFloor}m)</span>
+                </div>
+              </>
+            ) : (
+              <div className="map-legend-row">
+                <span className="map-legend-swatch" style={{ background: '#34495e' }} />
+                <span>Junction (no results)</span>
+              </div>
+            )}
+          </div>
+
+          {hasResults && (
+            <div className="map-legend-section">
+              <div className="map-legend-section-title">Pipes — Velocity</div>
+              <div className="map-legend-row">
+                <span className="map-legend-line" style={{ background: '#2ecc71' }} />
+                <span>Optimal ({dc.velocityEconomicMin}–{dc.velocityEconomicMax} m/s)</span>
+              </div>
+              <div className="map-legend-row">
+                <span className="map-legend-line" style={{ background: '#f39c12' }} />
+                <span>OK ({dc.velocityMin}–{dc.velocityMax} m/s)</span>
+              </div>
+              <div className="map-legend-row">
+                <span className="map-legend-line" style={{ background: '#e74c3c' }} />
+                <span>Fail (outside band)</span>
+              </div>
+            </div>
+          )}
+
+          <div className="map-legend-section">
+            <div className="map-legend-section-title">Special</div>
+            <div className="map-legend-row">
+              <span className="map-legend-line" style={{ background: '#3498db' }} />
+              <span>Pipe (default)</span>
+            </div>
+            <div className="map-legend-row">
+              <span className="map-legend-line map-legend-line--dashed" />
+              <span>Closed pipe</span>
+            </div>
+            <div className="map-legend-row">
+              <span className="map-legend-line" style={{ background: '#e67e22' }} />
+              <span>Pump</span>
+            </div>
+            <div className="map-legend-row">
+              <span className="map-legend-line" style={{ background: '#9b59b6' }} />
+              <span>Valve</span>
+            </div>
+            <div className="map-legend-row">
+              <span className="map-legend-ring" />
+              <span>Monitored (SCADA)</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Digital Twin view gradient legend */
 export function ColorLegend() {
   const model = useNetworkStore(s => s.model);
   const getNodeResult = useNetworkStore(s => s.getNodeResultAtTime);

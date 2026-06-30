@@ -37,6 +37,7 @@ interface NetworkState {
   activeView: 'design' | 'twin';
   showResultsDashboard: boolean;
   showScenarioPanel: boolean;
+  showPropertiesPanel: boolean;
 
   // ID counters
   nextId: { [prefix: string]: number };
@@ -79,6 +80,7 @@ interface NetworkState {
   setActiveView: (view: 'design' | 'twin') => void;
   setShowResultsDashboard: (show: boolean) => void;
   setShowScenarioPanel: (show: boolean) => void;
+  setShowPropertiesPanel: (show: boolean) => void;
 
   // Telemetry / SCADA
   telemetryData: TelemetryDataset | null;
@@ -154,6 +156,7 @@ export const useNetworkStore = create<NetworkState>()(
   activeView: 'design',
   showResultsDashboard: false,
   showScenarioPanel: false,
+  showPropertiesPanel: true,
   telemetryData: null,
   scadaConnected: false,
   scadaReadings: [],
@@ -365,6 +368,7 @@ export const useNetworkStore = create<NetworkState>()(
   setActiveView: (view) => set({ activeView: view }),
   setShowResultsDashboard: (show) => set({ showResultsDashboard: show }),
   setShowScenarioPanel: (show) => set({ showScenarioPanel: show }),
+  setShowPropertiesPanel: (show) => set({ showPropertiesPanel: show }),
 
   // Telemetry / SCADA
   loadTelemetry: (data) => set({ telemetryData: data }),

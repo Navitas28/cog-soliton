@@ -7,6 +7,7 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useNetworkStore } from '../store/networkStore';
 import { buildNodeFeatures, buildLinkFeatures, buildLabelFeatures } from './mapHelpers';
+import { loadNetworkIcons } from './mapIcons';
 import { AYODHYA_OUTLINE } from '../data/ayodhyaOutline';
 import { LayerControls, useLayerVisibility } from './LayerControls';
 import { ColorLegend } from './ColorLegend';
@@ -101,6 +102,9 @@ export function DigitalTwinView() {
     map.addControl(new maplibregl.NavigationControl(), 'bottom-left');
 
     map.on('load', () => {
+      // Load icons
+      loadNetworkIcons(map);
+
       // Ayodhya outline
       map.addSource(SRC_OUTLINE, { type: 'geojson', data: AYODHYA_OUTLINE });
       map.addLayer({
@@ -185,27 +189,21 @@ export function DigitalTwinView() {
         },
       });
 
-      // Node circles (on top of heatmap)
+      // Node icons (on top of heatmap)
       map.addLayer({
-        id: 'nodes-circle-twin', type: 'circle', source: SRC_NODES,
-        paint: {
-          'circle-radius': [
+        id: 'nodes-icons-twin', type: 'symbol', source: SRC_NODES,
+        layout: {
+          'icon-image': [
             'case',
-            ['==', ['get', 'type'], 'reservoir'], 10,
-            ['==', ['get', 'type'], 'tank'], 9,
-            6,
+            ['==', ['get', 'type'], 'reservoir'], 'icon-reservoir',
+            ['==', ['get', 'type'], 'tank'], 'icon-tank',
+            ['all', ['boolean', ['get', 'hasResult'], false], ['boolean', ['get', 'passesPressure'], false]], 'icon-junction-pass',
+            ['boolean', ['get', 'hasResult'], false], 'icon-junction-fail',
+            'icon-junction-default',
           ],
-          'circle-color': [
-            'case',
-            ['==', ['get', 'type'], 'reservoir'], '#2980b9',
-            ['==', ['get', 'type'], 'tank'], '#8e44ad',
-            ['all', ['boolean', ['get', 'hasResult'], false], ['boolean', ['get', 'passesPressure'], false]], '#2ecc71',
-            ['boolean', ['get', 'hasResult'], false], '#e74c3c',
-            '#ecf0f1',
-          ],
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff',
-          'circle-opacity': 0.95,
+          'icon-size': 1.0,
+          'icon-allow-overlap': true,
+          'icon-pitch-alignment': 'map',
         },
       });
 
@@ -319,9 +317,9 @@ export function DigitalTwinView() {
     const layerMap: Record<string, string[]> = {
       heatmap: ['heatmap-layer'],
       pipes: ['links-line-twin', 'links-line-closed-twin'],
-      junctions: ['nodes-circle-twin'],
-      reservoirs: ['nodes-circle-twin'],
-      tanks: ['nodes-circle-twin'],
+      junctions: ['nodes-icons-twin'],
+      reservoirs: ['nodes-icons-twin'],
+      tanks: ['nodes-icons-twin'],
       sensors: ['sensor-ring-twin'],
       labels: ['node-labels-twin', 'pressure-labels-twin', 'link-labels-twin'],
     };

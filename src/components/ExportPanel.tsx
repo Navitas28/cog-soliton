@@ -1,6 +1,8 @@
 /**
- * Export: CSV results and printable one-page summary.
+ * Export: CSV results, INP file, and printable one-page summary.
+ * Renders as a dropdown menu to reduce top-bar clutter.
  */
+import { useState } from 'react';
 import { useNetworkStore } from '../store/networkStore';
 import type { NodeResult, LinkResult } from '../engine/engine';
 
@@ -10,8 +12,10 @@ export function ExportPanel() {
   const epsResult = useNetworkStore(s => s.epsResult);
   const epsTimeIndex = useNetworkStore(s => s.epsTimeIndex);
   const lastInp = useNetworkStore(s => s.lastInp);
+  const [open, setOpen] = useState(false);
 
   const hasResults = !!(solveResult || epsResult);
+  const hasAnything = hasResults || !!lastInp;
 
   let nodeResults: Map<string, NodeResult> | undefined;
   let linkResults: Map<string, LinkResult> | undefined;
@@ -35,6 +39,7 @@ export function ExportPanel() {
       rows.push(`${j.id},${j.elevation},${nr.pressure.toFixed(2)},${nr.head.toFixed(2)},${nr.demand.toFixed(4)},${status}`);
     }
     downloadCsv(rows.join('\n'), 'soliton-nodes.csv');
+    setOpen(false);
   };
 
   const exportLinkCsv = () => {
@@ -51,15 +56,18 @@ export function ExportPanel() {
       rows.push(`${p.id},${p.length.toFixed(1)},${p.diameter},${lr.flow.toFixed(2)},${lr.velocity.toFixed(3)},${lr.headloss.toFixed(4)},${status}`);
     }
     downloadCsv(rows.join('\n'), 'soliton-pipes.csv');
+    setOpen(false);
   };
 
   const exportInp = () => {
     if (!lastInp) return;
     downloadCsv(lastInp, 'soliton-model.inp');
+    setOpen(false);
   };
 
   const printSummary = () => {
     if (!nodeResults || !linkResults) return;
+    setOpen(false);
     const dc = model.designCriteria;
 
     const junctionsPassing = model.junctions.filter(j => {
@@ -146,25 +154,37 @@ export function ExportPanel() {
     win.print();
   };
 
+  if (!hasAnything) return null;
+
   return (
-    <div style={{ display: 'flex', gap: 4 }}>
-      {hasResults && (
+    <div className="export-dropdown">
+      <button className="top-bar-btn" onClick={() => setOpen(!open)}>
+        📥 Export {open ? '▴' : '▾'}
+      </button>
+      {open && (
         <>
-          <button onClick={exportNodeCsv} style={btnStyle} title="Export node results as CSV">
-            📥 Nodes CSV
-          </button>
-          <button onClick={exportLinkCsv} style={btnStyle} title="Export pipe results as CSV">
-            📥 Pipes CSV
-          </button>
-          <button onClick={printSummary} style={btnStyle} title="Open printable one-page summary">
-            🖨 Print Summary
-          </button>
+          <div className="export-dropdown-backdrop" onClick={() => setOpen(false)} />
+          <div className="export-dropdown-menu">
+            {hasResults && (
+              <>
+                <button className="export-dropdown-item" onClick={exportNodeCsv}>
+                  Nodes CSV
+                </button>
+                <button className="export-dropdown-item" onClick={exportLinkCsv}>
+                  Pipes CSV
+                </button>
+                <button className="export-dropdown-item" onClick={printSummary}>
+                  Print Summary
+                </button>
+              </>
+            )}
+            {lastInp && (
+              <button className="export-dropdown-item" onClick={exportInp}>
+                INP File
+              </button>
+            )}
+          </div>
         </>
-      )}
-      {lastInp && (
-        <button onClick={exportInp} style={btnStyle} title="Download generated INP file">
-          📄 INP
-        </button>
       )}
     </div>
   );
@@ -179,8 +199,3 @@ function downloadCsv(content: string, filename: string) {
   a.click();
   URL.revokeObjectURL(url);
 }
-
-const btnStyle: React.CSSProperties = {
-  padding: '4px 10px', border: '1px solid #ddd', borderRadius: 4,
-  background: '#fff', cursor: 'pointer', fontSize: 11,
-};

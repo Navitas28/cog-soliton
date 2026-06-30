@@ -9,10 +9,14 @@ import { useNetworkStore } from '../store/networkStore';
 import { DemoLoader } from './DemoLoader';
 import { ExportPanel } from './ExportPanel';
 import { ScadaIndicator } from './ScadaPanel';
-import { buildNodeFeatures, buildLinkFeatures, buildLabelFeatures, offlineBlankStyle } from './mapHelpers';
+import { buildNodeFeatures, buildLinkFeatures, buildLabelFeatures, offlineBlankStyle, countPressurePassing, countVelocityPassing } from './mapHelpers';
+import { MapLegend } from './ColorLegend';
+import { loadNetworkIcons } from './mapIcons';
 import { AYODHYA_OUTLINE } from '../data/ayodhyaOutline';
 import type { NodeResult, LinkResult } from '../engine/engine';
 import type { DrawingTool } from '../store/networkStore';
+
+const NODE_LAYER = 'nodes-icons';
 
 const KEY_TO_TOOL: Record<string, DrawingTool> = {
   s: 'select', r: 'reservoir', j: 'junction', t: 'tank', p: 'pipe', u: 'pump', v: 'valve',
@@ -124,41 +128,30 @@ export function MapCanvas() {
     map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
 
     map.on('load', () => {
-      // Ayodhya outline layers
-      map.addSource(SRC_OUTLINE, { type: 'geojson', data: AYODHYA_OUTLINE });
+      // Load programmatic icons
+      loadNetworkIcons(map);
 
-      // Ayodhya outline layers — hidden by default, shown when Ayodhya demo loaded
+      // Ayodhya outline — subtle on real basemap
+      map.addSource(SRC_OUTLINE, { type: 'geojson', data: AYODHYA_OUTLINE });
       map.addLayer({
         id: 'outline-fill', type: 'fill', source: SRC_OUTLINE,
         filter: ['==', ['get', 'type'], 'boundary'],
-        paint: { 'fill-color': '#e8edf5', 'fill-opacity': 0.4 },
+        paint: { 'fill-color': '#3a5fcf', 'fill-opacity': 0.06 },
         layout: { visibility: 'none' },
       });
       map.addLayer({
         id: 'outline-border', type: 'line', source: SRC_OUTLINE,
         filter: ['==', ['get', 'type'], 'boundary'],
-        paint: { 'line-color': '#99aacc', 'line-width': 1.5, 'line-dasharray': [4, 2] },
-        layout: { visibility: 'none' },
-      });
-      map.addLayer({
-        id: 'outline-river', type: 'line', source: SRC_OUTLINE,
-        filter: ['==', ['get', 'type'], 'river'],
-        paint: { 'line-color': '#5dade2', 'line-width': 3, 'line-opacity': 0.7 },
-        layout: { visibility: 'none' },
-      });
-      map.addLayer({
-        id: 'outline-roads', type: 'line', source: SRC_OUTLINE,
-        filter: ['==', ['get', 'type'], 'road'],
-        paint: { 'line-color': '#cccccc', 'line-width': 1 },
+        paint: { 'line-color': '#3a5fcf', 'line-width': 2, 'line-opacity': 0.4, 'line-dasharray': [6, 3] },
         layout: { visibility: 'none' },
       });
 
-      // Network sources (empty initially)
+      // Network sources
       map.addSource(SRC_LINKS, { type: 'geojson', data: EMPTY_FC });
       map.addSource(SRC_NODES, { type: 'geojson', data: EMPTY_FC });
       map.addSource(SRC_LABELS, { type: 'geojson', data: EMPTY_FC });
 
-      // Link color expression (shared)
+      // Link color expression
       const linkColor: maplibregl.ExpressionSpecification = [
         'case',
         ['==', ['get', 'velocityStatus'], 'optimal'], '#2ecc71',
@@ -170,94 +163,98 @@ export function MapCanvas() {
         '#3498db',
       ];
       const linkWidth: maplibregl.ExpressionSpecification = [
-        'case', ['boolean', ['get', 'selected'], false], 5, 3,
+        'case', ['boolean', ['get', 'selected'], false], 6, 4,
       ];
 
-      // Open links (solid line)
+      // Pipe casing (white outline for readability on basemap)
+      map.addLayer({
+        id: 'links-casing', type: 'line', source: SRC_LINKS,
+        paint: {
+          'line-color': '#ffffff',
+          'line-width': ['case', ['boolean', ['get', 'selected'], false], 10, 7],
+          'line-opacity': 0.5,
+        },
+      });
+
+      // Open links (solid)
       map.addLayer({
         id: 'links-line', type: 'line', source: SRC_LINKS,
         filter: ['!', ['boolean', ['get', 'closed'], false]],
         paint: { 'line-color': linkColor, 'line-width': linkWidth },
       });
 
-      // Closed links (dashed line)
+      // Closed links (dashed)
       map.addLayer({
         id: 'links-line-closed', type: 'line', source: SRC_LINKS,
         filter: ['boolean', ['get', 'closed'], false],
         paint: { 'line-color': linkColor, 'line-width': linkWidth, 'line-dasharray': [4, 2] },
       });
 
-      // Pump/valve icons at midpoints (via labels source)
+      // Pump/valve icons at link midpoints
       map.addLayer({
-        id: 'labels-bg', type: 'circle', source: SRC_LABELS,
-        paint: {
-          'circle-radius': 0,
-          'circle-color': 'transparent',
+        id: 'link-type-icons', type: 'symbol', source: SRC_LABELS,
+        filter: ['in', ['get', 'linkType'], ['literal', ['pump', 'valve']]],
+        layout: {
+          'icon-image': ['case',
+            ['==', ['get', 'linkType'], 'pump'], 'icon-pump',
+            'icon-valve',
+          ],
+          'icon-size': 0.7,
+          'icon-allow-overlap': true,
         },
       });
 
-      // Link labels — only show when zoomed in
+      // Link labels
       map.addLayer({
         id: 'link-labels', type: 'symbol', source: SRC_LABELS,
         minzoom: 13,
+        filter: ['!', ['in', ['get', 'linkType'], ['literal', ['pump', 'valve']]]],
         layout: {
           'text-field': ['concat', ['get', 'label'], '\n', ['get', 'flowLabel']],
           'text-size': 10,
           'text-offset': [0, -1],
           'text-allow-overlap': false,
         },
-        paint: { 'text-color': '#555', 'text-halo-color': '#fff', 'text-halo-width': 1.5 },
+        paint: { 'text-color': '#333', 'text-halo-color': '#fff', 'text-halo-width': 2 },
       });
 
-      // Node layers — different shapes via circle
+      // Node icons (symbol layer replacing circle layer)
       map.addLayer({
-        id: 'nodes-circle', type: 'circle', source: SRC_NODES,
-        paint: {
-          'circle-radius': [
+        id: NODE_LAYER, type: 'symbol', source: SRC_NODES,
+        layout: {
+          'icon-image': [
             'case',
-            ['any', ['boolean', ['get', 'selected'], false], ['boolean', ['get', 'highlighted'], false], ['boolean', ['get', 'dragging'], false]], 10,
-            8,
+            ['==', ['get', 'type'], 'reservoir'], 'icon-reservoir',
+            ['==', ['get', 'type'], 'tank'], 'icon-tank',
+            ['all', ['boolean', ['get', 'hasResult'], false], ['boolean', ['get', 'passesPressure'], false]], 'icon-junction-pass',
+            ['boolean', ['get', 'hasResult'], false], 'icon-junction-fail',
+            'icon-junction-default',
           ],
-          'circle-color': [
+          'icon-size': [
             'case',
-            ['==', ['get', 'type'], 'reservoir'], '#2980b9',
-            ['==', ['get', 'type'], 'tank'], '#8e44ad',
-            // Junctions: color by result
-            ['all', ['boolean', ['get', 'hasResult'], false], ['boolean', ['get', 'passesPressure'], false]], '#2ecc71',
-            ['boolean', ['get', 'hasResult'], false], '#e74c3c',
-            '#34495e',
+            ['any', ['boolean', ['get', 'selected'], false], ['boolean', ['get', 'highlighted'], false], ['boolean', ['get', 'dragging'], false]], 1.3,
+            1.0,
           ],
-          'circle-stroke-width': [
-            'case',
-            ['boolean', ['get', 'selected'], false], 3,
-            ['boolean', ['get', 'highlighted'], false], 3,
-            ['boolean', ['get', 'dragging'], false], 3,
-            0,
-          ],
-          'circle-stroke-color': [
-            'case',
-            ['boolean', ['get', 'dragging'], false], '#e67e22',
-            ['boolean', ['get', 'highlighted'], false], '#f39c12',
-            '#3a5fcf',
-          ],
+          'icon-allow-overlap': true,
+          'icon-pitch-alignment': 'map',
         },
       });
 
-      // Node labels — show at moderate zoom
+      // Node labels
       map.addLayer({
         id: 'node-labels', type: 'symbol', source: SRC_NODES,
         minzoom: 12,
         layout: {
           'text-field': ['get', 'id'],
           'text-size': 11,
-          'text-offset': [0, -1.5],
+          'text-offset': [0, -2],
           'text-allow-overlap': false,
           'text-font': ['Open Sans Semibold'],
         },
-        paint: { 'text-color': '#333', 'text-halo-color': '#fff', 'text-halo-width': 1.5 },
+        paint: { 'text-color': '#1a1a2e', 'text-halo-color': '#fff', 'text-halo-width': 2 },
       });
 
-      // Pressure labels — show when more zoomed in
+      // Pressure labels
       map.addLayer({
         id: 'pressure-labels', type: 'symbol', source: SRC_NODES,
         minzoom: 13,
@@ -265,26 +262,26 @@ export function MapCanvas() {
         layout: {
           'text-field': ['concat', ['to-string', ['round', ['get', 'pressure']]], 'm'],
           'text-size': 10,
-          'text-offset': [0, 1.5],
+          'text-offset': [0, 2],
           'text-allow-overlap': false,
         },
         paint: {
-          'text-color': ['case', ['boolean', ['get', 'passesPressure'], false], '#155724', '#721c24'],
+          'text-color': ['case', ['boolean', ['get', 'passesPressure'], false], '#155724', '#c0392b'],
           'text-halo-color': '#fff',
-          'text-halo-width': 1,
+          'text-halo-width': 1.5,
         },
       });
 
-      // Monitored node ring — larger dashed circle for nodes with telemetry
+      // Monitored node ring
       map.addLayer({
         id: 'monitored-ring', type: 'circle', source: SRC_NODES,
         filter: ['boolean', ['get', 'monitored'], false],
         paint: {
-          'circle-radius': 14,
+          'circle-radius': 18,
           'circle-color': 'transparent',
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#f39c12',
-          'circle-stroke-opacity': 0.8,
+          'circle-stroke-width': 2.5,
+          'circle-stroke-color': '#00bcd4',
+          'circle-stroke-opacity': 0.9,
         },
       });
 
@@ -328,7 +325,7 @@ export function MapCanvas() {
 
     // Show Ayodhya outline only when Ayodhya model is loaded
     const isAyodhya = model.title.toLowerCase().includes('ayodhya');
-    const outlineLayers = ['outline-fill', 'outline-border', 'outline-river', 'outline-roads'];
+    const outlineLayers = ['outline-fill', 'outline-border'];
     for (const layerId of outlineLayers) {
       if (map.getLayer(layerId)) {
         map.setLayoutProperty(layerId, 'visibility', isAyodhya ? 'visible' : 'none');
@@ -373,7 +370,7 @@ export function MapCanvas() {
 
       // Two-click link tools (pipe, pump, valve)
       if (tool === 'pipe' || tool === 'pump' || tool === 'valve') {
-        const nodeFeatures = map.queryRenderedFeatures(e.point, { layers: ['nodes-circle'] });
+        const nodeFeatures = map.queryRenderedFeatures(e.point, { layers: [NODE_LAYER] });
         if (nodeFeatures.length === 0) return;
         const hitId = nodeFeatures[0].properties?.id as string;
 
@@ -394,7 +391,7 @@ export function MapCanvas() {
       // Select tool
       if (tool === 'select') {
         // Check nodes
-        const nodeFeatures = map.queryRenderedFeatures(e.point, { layers: ['nodes-circle'] });
+        const nodeFeatures = map.queryRenderedFeatures(e.point, { layers: [NODE_LAYER] });
         if (nodeFeatures.length > 0) {
           const id = nodeFeatures[0].properties?.id as string;
           const type = nodeFeatures[0].properties?.type as 'junction' | 'reservoir' | 'tank';
@@ -426,7 +423,7 @@ export function MapCanvas() {
     const onMouseDown = (e: maplibregl.MapMouseEvent) => {
       if (useNetworkStore.getState().activeTool !== 'select') return;
 
-      const nodeFeatures = map.queryRenderedFeatures(e.point, { layers: ['nodes-circle'] });
+      const nodeFeatures = map.queryRenderedFeatures(e.point, { layers: [NODE_LAYER] });
       if (nodeFeatures.length === 0) return;
 
       const nodeId = nodeFeatures[0].properties?.id as string;
@@ -451,20 +448,20 @@ export function MapCanvas() {
       }
     };
 
-    map.on('mousedown', 'nodes-circle', onMouseDown);
+    map.on('mousedown', NODE_LAYER, onMouseDown);
     map.on('mousemove', onMouseMove);
     map.on('mouseup', onMouseUp);
 
     // Cursor style on hover
-    map.on('mouseenter', 'nodes-circle', () => {
+    map.on('mouseenter', NODE_LAYER, () => {
       if (useNetworkStore.getState().activeTool === 'select') map.getCanvas().style.cursor = 'grab';
     });
-    map.on('mouseleave', 'nodes-circle', () => {
+    map.on('mouseleave', NODE_LAYER, () => {
       if (!draggingNodeIdRef.current) map.getCanvas().style.cursor = '';
     });
 
     return () => {
-      map.off('mousedown', 'nodes-circle', onMouseDown);
+      map.off('mousedown', NODE_LAYER, onMouseDown);
       map.off('mousemove', onMouseMove);
       map.off('mouseup', onMouseUp);
     };
@@ -477,77 +474,113 @@ export function MapCanvas() {
     map.getCanvas().style.cursor = activeTool === 'select' ? '' : 'crosshair';
   }, [activeTool]);
 
+  // Compliance counts for status badge
+  const pressureStats = hasResults ? countPressurePassing(model, getNodeResult) : null;
+  const velocityStats = hasResults ? countVelocityPassing(model, getLinkResult) : null;
+
+  const compliancePct = pressureStats && pressureStats.total > 0
+    ? (pressureStats.passing / pressureStats.total) * 100 : 0;
+  const badgeClass = compliancePct >= 90 ? 'status-badge--pass'
+    : compliancePct >= 70 ? 'status-badge--warn' : 'status-badge--fail';
+
   return (
     <div className="map-container">
+      {/* Top bar — two rows */}
       <div className="top-bar">
-        <button className="compute-btn" onClick={() => solve()} disabled={isSolving}>
-          {isSolving ? '⏳ Solving…' : '▶ Compute'}
-        </button>
-
-        <DemoLoader />
-
-        <button onClick={() => setShowScenarioPanel(!showScenarioPanel)}
-          style={{ padding: '6px 12px', border: '1px solid #3a5fcf', borderRadius: 4, background: showScenarioPanel ? '#3a5fcf' : '#fff', color: showScenarioPanel ? '#fff' : '#3a5fcf', cursor: 'pointer', fontSize: 12 }}>
-          ⚙ Scenario
-        </button>
-
-        {hasResults && (
-          <button onClick={() => setShowResultsDashboard(!showResultsDashboard)}
-            style={{ padding: '6px 12px', border: '1px solid #27ae60', borderRadius: 4, background: showResultsDashboard ? '#27ae60' : '#fff', color: showResultsDashboard ? '#fff' : '#27ae60', cursor: 'pointer', fontSize: 12 }}>
-            📊 Results
+        <div className="top-bar-row">
+          <button className="compute-btn" onClick={() => solve()} disabled={isSolving}>
+            {isSolving ? '⏳ Solving…' : '▶ Compute'}
           </button>
-        )}
+          <DemoLoader />
 
-        {solveError && <div className="solve-error" title={solveError}>{solveError}</div>}
+          <div className="top-bar-separator" />
 
-        {hasResults && (
-          <div className="status-badge">
-            {model.options.duration > 0 ? 'EPS' : 'SS'} — {model.junctions.filter(j => {
-              const nr = getNodeResult(j.id);
-              return nr && nr.pressure >= model.designCriteria.residualPressureFloor;
-            }).length}/{model.junctions.length} pass
-          </div>
-        )}
-
-        <ExportPanel />
-        <ScadaIndicator />
-
-        {hasResults && (
-          <button onClick={() => useNetworkStore.getState().setActiveView('twin')}
-            style={{ padding: '6px 12px', border: '1px solid #00bcd4', borderRadius: 4, background: '#00bcd4', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-            🌐 Digital Twin
+          <button className="top-bar-btn" onClick={() => setShowScenarioPanel(!showScenarioPanel)}
+            data-active={showScenarioPanel || undefined}>
+            ⚙ Scenario
           </button>
-        )}
 
-        {epsResult && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
-            <span style={{ fontSize: 11, color: '#fff', background: 'rgba(0,0,0,0.5)', padding: '2px 8px', borderRadius: 3 }}>
-              {formatTime(epsResult.timestamps[epsTimeIndex])}
+          {hasResults && (
+            <button className="top-bar-btn" onClick={() => setShowResultsDashboard(!showResultsDashboard)}
+              data-active={showResultsDashboard || undefined}>
+              📊 Results
+            </button>
+          )}
+
+          {hasResults && (
+            <button className="top-bar-btn top-bar-btn--twin" onClick={() => useNetworkStore.getState().setActiveView('twin')}>
+              🌐 Digital Twin
+            </button>
+          )}
+
+          {/* Status badge inline */}
+          {hasResults && pressureStats && velocityStats && (
+            <span className={`status-badge-inline ${badgeClass}`}>
+              P: {pressureStats.passing}/{pressureStats.total} ({compliancePct.toFixed(0)}%)
+              &nbsp;·&nbsp;
+              V: {velocityStats.passing}/{velocityStats.total}
+              &nbsp;·&nbsp;
+              {model.options.duration > 0 ? 'EPS' : 'SS'}
             </span>
-            <input type="range" min={0} max={epsResult.timestamps.length - 1}
-              value={epsTimeIndex} onChange={e => setEpsTimeIndex(parseInt(e.target.value))}
-              style={{ width: 200 }} />
-          </div>
-        )}
+          )}
+
+          <div className="top-bar-spacer" />
+
+          <ExportPanel />
+          <ScadaIndicator />
+
+          {epsResult && (
+            <>
+              <div className="top-bar-separator" />
+              <span className="eps-time-badge">
+                {formatTime(epsResult.timestamps[epsTimeIndex])}
+              </span>
+              <input type="range" className="eps-time-slider" min={0} max={epsResult.timestamps.length - 1}
+                value={epsTimeIndex} onChange={e => setEpsTimeIndex(parseInt(e.target.value))} />
+            </>
+          )}
+        </div>
       </div>
+
+      {/* Toast error notification */}
+      {solveError && (
+        <div className="toast-error">
+          <span className="toast-error-icon">!</span>
+          <span className="toast-error-text" title={solveError}>{solveError}</span>
+          <button className="toast-error-close" onClick={() => useNetworkStore.getState().clearResults()}>×</button>
+        </div>
+      )}
 
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
 
-      <div className="inp-viewer">
-        <button className="inp-toggle" onClick={() => setShowInp(!showInp)}>
-          {showInp ? 'Hide INP' : 'Show INP'}
+      {/* Map legend */}
+      <MapLegend />
+
+      {/* INP viewer — slide-up panel */}
+      {showInp && lastInp && (
+        <div className="inp-panel">
+          <div className="inp-panel-header">
+            <span className="inp-panel-title">EPANET INP File</span>
+            <button className="inp-panel-btn" onClick={() => {
+              navigator.clipboard.writeText(lastInp);
+            }} title="Copy to clipboard">Copy</button>
+            <button className="inp-panel-btn" onClick={() => setShowInp(false)}>×</button>
+          </div>
+          <pre className="inp-panel-content">{lastInp}</pre>
+        </div>
+      )}
+
+      {/* INP toggle button (bottom bar) */}
+      {lastInp && !showInp && (
+        <button className="inp-toggle-btn" onClick={() => setShowInp(true)}>
+          INP
         </button>
-        {showInp && lastInp && <div className="inp-content">{lastInp}</div>}
-      </div>
+      )}
 
       {/* Drawing guide */}
       {(activeTool === 'pipe' || activeTool === 'pump' || activeTool === 'valve') && pipeDrawingFrom && (
-        <div style={{
-          position: 'absolute', bottom: 12, left: 12,
-          background: 'rgba(0,0,0,0.7)', color: '#fff', padding: '6px 12px',
-          borderRadius: 4, fontSize: 12, zIndex: 5,
-        }}>
-          Drawing {activeTool} from {pipeDrawingFrom} — click another node
+        <div className="drawing-guide">
+          Drawing {activeTool} from <strong>{pipeDrawingFrom}</strong> — click another node
         </div>
       )}
     </div>
