@@ -19,7 +19,6 @@ export function CommandPalette({ onClose, onNewProject }: { onClose: () => void;
   const trapRef = useRef<HTMLDivElement>(null);
   useFocusTrap(trapRef, true);
 
-  const model = useNetworkStore(s => s.model);
   const solveResult = useNetworkStore(s => s.solveResult);
   const epsResult = useNetworkStore(s => s.epsResult);
   const setActiveTool = useNetworkStore(s => s.setActiveTool);
