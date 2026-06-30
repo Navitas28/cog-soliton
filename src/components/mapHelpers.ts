@@ -154,10 +154,12 @@ export function buildLabelFeatures(
   return { type: 'FeatureCollection', features };
 }
 
-/** Blank offline-ready MapLibre style (no tile server needed) */
+/** Blank offline-ready MapLibre style with glyphs for text rendering */
 export function offlineBlankStyle(): maplibregl.StyleSpecification {
   return {
     version: 8 as const,
+    // Free MapLibre demo glyphs — needed for symbol layers (text-field)
+    glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
     sources: {},
     layers: [
       {

@@ -159,23 +159,33 @@ export function MapCanvas() {
       map.addSource(SRC_NODES, { type: 'geojson', data: EMPTY_FC });
       map.addSource(SRC_LABELS, { type: 'geojson', data: EMPTY_FC });
 
-      // Link layers
+      // Link color expression (shared)
+      const linkColor: maplibregl.ExpressionSpecification = [
+        'case',
+        ['==', ['get', 'velocityStatus'], 'optimal'], '#2ecc71',
+        ['==', ['get', 'velocityStatus'], 'ok'], '#f39c12',
+        ['==', ['get', 'velocityStatus'], 'fail'], '#e74c3c',
+        ['==', ['get', 'type'], 'pump'], '#e67e22',
+        ['==', ['get', 'type'], 'valve'], '#9b59b6',
+        ['boolean', ['get', 'closed'], false], '#999999',
+        '#3498db',
+      ];
+      const linkWidth: maplibregl.ExpressionSpecification = [
+        'case', ['boolean', ['get', 'selected'], false], 5, 3,
+      ];
+
+      // Open links (solid line)
       map.addLayer({
         id: 'links-line', type: 'line', source: SRC_LINKS,
-        paint: {
-          'line-color': [
-            'case',
-            ['==', ['get', 'velocityStatus'], 'optimal'], '#2ecc71',
-            ['==', ['get', 'velocityStatus'], 'ok'], '#f39c12',
-            ['==', ['get', 'velocityStatus'], 'fail'], '#e74c3c',
-            ['==', ['get', 'type'], 'pump'], '#e67e22',
-            ['==', ['get', 'type'], 'valve'], '#9b59b6',
-            ['boolean', ['get', 'closed'], false], '#999999',
-            '#3498db',
-          ],
-          'line-width': ['case', ['boolean', ['get', 'selected'], false], 5, 3],
-          'line-dasharray': ['case', ['boolean', ['get', 'closed'], false], ['literal', [4, 2]], ['literal', [1, 0]]],
-        },
+        filter: ['!', ['boolean', ['get', 'closed'], false]],
+        paint: { 'line-color': linkColor, 'line-width': linkWidth },
+      });
+
+      // Closed links (dashed line)
+      map.addLayer({
+        id: 'links-line-closed', type: 'line', source: SRC_LINKS,
+        filter: ['boolean', ['get', 'closed'], false],
+        paint: { 'line-color': linkColor, 'line-width': linkWidth, 'line-dasharray': [4, 2] },
       });
 
       // Pump/valve icons at midpoints (via labels source)
@@ -241,7 +251,7 @@ export function MapCanvas() {
           'text-size': 11,
           'text-offset': [0, -1.5],
           'text-allow-overlap': true,
-          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+          'text-font': ['Open Sans Semibold'],
         },
         paint: { 'text-color': '#333', 'text-halo-color': '#fff', 'text-halo-width': 1.5 },
       });
@@ -357,7 +367,7 @@ export function MapCanvas() {
           return;
         }
         // Check links
-        const linkFeatures = map.queryRenderedFeatures(e.point, { layers: ['links-line'] });
+        const linkFeatures = map.queryRenderedFeatures(e.point, { layers: ['links-line', 'links-line-closed'] });
         if (linkFeatures.length > 0) {
           const id = linkFeatures[0].properties?.id as string;
           const type = linkFeatures[0].properties?.type as 'pipe' | 'pump' | 'valve';
