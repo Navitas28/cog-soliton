@@ -1,7 +1,7 @@
 /**
  * Multi-scenario comparison dashboard — side-by-side metrics for saved scenarios.
  */
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { loadScenarios, type SavedScenario } from '../store/scenarioStore';
 import { serializeToInp } from '../model/serializer';
 import { solveSteadyState } from '../engine/engine';

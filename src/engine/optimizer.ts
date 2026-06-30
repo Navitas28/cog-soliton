@@ -6,7 +6,7 @@ import { serializeToInp } from '../model/serializer';
 import { solveSteadyState } from './engine';
 import type { NetworkModel, DesignCriteria } from '../model/types';
 import type { PipeMaterial } from '../model/types';
-import { STANDARD_DIAMETERS, snapToStandard, nextLargerStandard, nextSmallerStandard, getCostPerMeter } from '../data/pipeCosts';
+import { snapToStandard, nextLargerStandard, nextSmallerStandard, getCostPerMeter } from '../data/pipeCosts';
 
 export interface OptimizationResult {
   model: NetworkModel;
