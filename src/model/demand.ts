@@ -35,6 +35,21 @@ export const DEFAULT_DIURNAL_PATTERN: number[] = [
  * If the average is too far from 1.0, the total daily demand will be
  * over- or under-stated relative to the average-day base demand.
  */
+/**
+ * CPHEEO fire demand calculation (Kuichling formula).
+ * Q = 100 * sqrt(P) litres/minute, where P = population in thousands.
+ * Returns fire demand in LPS.
+ *
+ * WARNING: Verify against CPHEEO Ch. 2 — the manual also provides
+ * tabulated fire demand values by city population class. This formula
+ * is one of several methods listed.
+ */
+export function computeFireDemand(populationThousands: number): number {
+  if (populationThousands <= 0) return 0;
+  const qlpm = 100 * Math.sqrt(populationThousands); // litres per minute
+  return qlpm / 60; // convert to LPS
+}
+
 export function validatePatternAverage(multipliers: number[], tolerance = 0.1): {
   valid: boolean;
   average: number;

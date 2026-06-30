@@ -1,9 +1,9 @@
 /**
  * Scenario panel — simulation options, design criteria, demand patterns.
  */
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNetworkStore } from '../store/networkStore';
-import { DEFAULT_DIURNAL_PATTERN, computeBaseDemand } from '../model/demand';
+import { DEFAULT_DIURNAL_PATTERN, computeBaseDemand, computeFireDemand, validatePatternAverage } from '../model/demand';
 
 export function ScenarioPanel() {
   const model = useNetworkStore(s => s.model);
@@ -129,6 +129,15 @@ export function ScenarioPanel() {
         <h4>Demand Calculator</h4>
         <DemandCalc lpcd={dc.lpcd} />
       </div>
+
+      {/* Fire demand calculator */}
+      <div className="panel-section">
+        <h4>Fire Demand Calculator</h4>
+        <FireDemandCalc />
+        <div style={{ fontSize: 10, color: '#e67e22', marginTop: 4, fontWeight: 600 }}>
+          ⚠ Verify against CPHEEO Ch. 2
+        </div>
+      </div>
     </div>
   );
 }
@@ -149,31 +158,126 @@ function NumField({ label, value, unit, onChange, decimals = 2 }: {
 }
 
 function PatternMini({ pattern }: { pattern: { id: string; multipliers: number[] } }) {
+  const updatePattern = useNetworkStore(s => s.updatePattern);
   const deletePattern = useNetworkStore(s => s.deletePattern);
-  const max = Math.max(...pattern.multipliers);
+  const [editingBar, setEditingBar] = useState<number | null>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  const max = Math.max(...pattern.multipliers, 1);
+  const { valid, average } = validatePatternAverage(pattern.multipliers);
+  const peak = Math.max(...pattern.multipliers);
+  const CHART_HEIGHT = 80;
+  const MAX_MULTIPLIER = 5;
+
+  // Handle mouse drag on bars
+  const handleBarMouseDown = (barIndex: number) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    setEditingBar(barIndex);
+    updateBarFromMouse(barIndex, e.clientY);
+  };
+
+  const updateBarFromMouse = (barIndex: number, clientY: number) => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    const rect = chart.getBoundingClientRect();
+    const relY = 1 - Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+    const newVal = Math.round(relY * MAX_MULTIPLIER * 10) / 10; // snap to 0.1
+    const newMultipliers = [...pattern.multipliers];
+    newMultipliers[barIndex] = Math.max(0, Math.min(MAX_MULTIPLIER, newVal));
+    updatePattern(pattern.id, newMultipliers);
+  };
+
+  useEffect(() => {
+    if (editingBar === null) return;
+    const handleMove = (e: MouseEvent) => updateBarFromMouse(editingBar, e.clientY);
+    const handleUp = () => setEditingBar(null);
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+    return () => { window.removeEventListener('mousemove', handleMove); window.removeEventListener('mouseup', handleUp); };
+  }, [editingBar, pattern.id]);
 
   return (
     <div style={{ marginBottom: 8, padding: 6, background: '#f7f8fa', borderRadius: 4 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
         <span style={{ fontWeight: 600, fontSize: 12 }}>Pattern {pattern.id}</span>
-        <span style={{ fontSize: 10, color: '#666' }}>Peak: {max.toFixed(1)}×</span>
+        <span style={{ fontSize: 10, color: '#666' }}>Peak: {peak.toFixed(1)}× | Avg: {average.toFixed(2)}</span>
         <button onClick={() => deletePattern(pattern.id)} style={{ border: 'none', background: 'none', color: '#e74c3c', cursor: 'pointer', fontSize: 12 }}>×</button>
       </div>
-      {/* Mini bar chart */}
-      <div style={{ display: 'flex', gap: 1, height: 30, alignItems: 'flex-end' }}>
+
+      {/* Interactive bar chart — drag to edit */}
+      <div ref={chartRef} style={{ display: 'flex', gap: 1, height: CHART_HEIGHT, alignItems: 'flex-end', cursor: 'ns-resize' }}>
         {pattern.multipliers.map((m, i) => (
-          <div key={i} style={{
-            flex: 1, background: m >= 2.0 ? '#e74c3c' : m >= 1.0 ? '#3498db' : '#95a5a6',
-            height: `${(m / max) * 100}%`, borderRadius: '1px 1px 0 0',
-          }} title={`${i}:00 — ${m.toFixed(2)}×`} />
+          <div key={i}
+            onMouseDown={handleBarMouseDown(i)}
+            style={{
+              flex: 1,
+              background: editingBar === i ? '#2c3e50' : m >= 2.0 ? '#e74c3c' : m >= 1.0 ? '#3498db' : '#95a5a6',
+              height: `${(m / MAX_MULTIPLIER) * 100}%`,
+              borderRadius: '2px 2px 0 0',
+              transition: editingBar !== null ? 'none' : 'height 0.1s',
+            }}
+            title={`${i}:00 — ${m.toFixed(1)}×`}
+          />
         ))}
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: '#999', marginTop: 2 }}>
         <span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>24h</span>
       </div>
+
+      {/* Validation */}
+      {!valid && (
+        <div style={{ fontSize: 10, color: '#e74c3c', marginTop: 4 }}>
+          ⚠ Average multiplier ({average.toFixed(2)}) far from 1.0 — total daily demand will be {average > 1 ? 'over' : 'under'}-stated.
+        </div>
+      )}
+
+      {/* Presets */}
+      <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+        <button onClick={() => updatePattern(pattern.id, [...DEFAULT_DIURNAL_PATTERN])} style={presetBtn}>CPHEEO Default</button>
+        <button onClick={() => updatePattern(pattern.id, new Array(24).fill(1.0))} style={presetBtn}>Flat</button>
+        <button onClick={() => updatePattern(pattern.id, [
+          0.3, 0.2, 0.2, 0.2, 0.3, 0.5, 1.2, 2.0, 2.5, 2.8, 2.5, 2.0,
+          1.8, 1.5, 1.3, 1.5, 1.8, 2.2, 2.0, 1.5, 1.0, 0.7, 0.5, 0.3,
+        ])} style={presetBtn}>Commercial</button>
+      </div>
     </div>
   );
 }
+
+function FireDemandCalc() {
+  const [popK, setPopK] = useState(100); // thousands
+  const fireDemand = computeFireDemand(popK);
+  const fireDemandM3h = fireDemand * 3.6;
+  const hydrants = Math.ceil(fireDemand * 60 / 1000); // ~1000 LPM per hydrant
+
+  return (
+    <div>
+      <div className="field-row">
+        <span className="field-label">Population (000s)</span>
+        <input className="field-input" type="number" value={popK}
+          onChange={e => { const v = parseFloat(e.target.value); if (!isNaN(v)) setPopK(v); }} />
+      </div>
+      <div className="field-row">
+        <span className="field-label">Fire demand</span>
+        <span style={{ fontWeight: 600 }}>{fireDemand.toFixed(2)} LPS</span>
+        <span className="field-unit">({fireDemandM3h.toFixed(1)} m3/hr)</span>
+      </div>
+      <div className="field-row">
+        <span className="field-label">Hydrants needed</span>
+        <span style={{ fontWeight: 600 }}>{hydrants}</span>
+        <span className="field-unit">(@ 1000 LPM)</span>
+      </div>
+      <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>
+        Q = 100 × sqrt(P) LPM. Apply as additional demand at fire hydrant junctions.
+      </div>
+    </div>
+  );
+}
+
+const presetBtn: React.CSSProperties = {
+  padding: '2px 6px', border: '1px solid #ccc', borderRadius: 3, background: '#fff',
+  cursor: 'pointer', fontSize: 10,
+};
 
 function DemandCalc({ lpcd }: { lpcd: number }) {
   const [pop, setPop] = useState(1000);
