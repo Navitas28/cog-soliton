@@ -3,7 +3,7 @@
  * Reverse of serializer.ts — together they form the round-trip contract.
  */
 import type { NetworkModel, Junction, Reservoir, Tank, Pipe, Pump, Valve, DemandPattern, PipeStatus, ValveType } from './types';
-import { defaultOptions, defaultDesignCriteria } from './types';
+import { defaultOptions, defaultDesignCriteria, defaultQualitySettings } from './types';
 
 /**
  * Parse an EPANET INP file string into a NetworkModel.
@@ -214,6 +214,9 @@ export function parseInpFile(inp: string): NetworkModel {
     curves: [],
     options,
     designCriteria: defaultDesignCriteria(),
+    qualitySettings: defaultQualitySettings(),
+    qualitySources: [],
+    rules: [],
   };
 }
 

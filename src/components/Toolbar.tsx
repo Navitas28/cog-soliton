@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNetworkStore, type DrawingTool } from '../store/networkStore';
 import { UndoRedoBadge } from './UndoRedoBadge';
+import { ImportDialog } from './ImportDialog';
 
 const nodeTools: { id: DrawingTool; label: string; shortcut: string; icon: string }[] = [
   { id: 'select', label: 'Select', shortcut: 'S', icon: '⬚' },
@@ -19,6 +20,7 @@ export function Toolbar() {
   const activeTool = useNetworkStore(s => s.activeTool);
   const setActiveTool = useNetworkStore(s => s.setActiveTool);
 
+  const [showImport, setShowImport] = useState(false);
   const [isDark, setIsDark] = useState(
     () => typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark'
   );
@@ -75,6 +77,18 @@ export function Toolbar() {
       ))}
 
       <div className="tool-divider" />
+
+      {/* Import */}
+      <button
+        className="tool-btn"
+        onClick={() => setShowImport(true)}
+        data-tooltip="Import GeoJSON (I)"
+        style={{ fontSize: 14 }}
+      >
+        &#8681;
+      </button>
+
+      <div className="tool-divider" />
       <UndoRedoBadge />
 
       <div style={{ flex: 1 }} />
@@ -84,6 +98,8 @@ export function Toolbar() {
       <div style={{ fontSize: 8, color: 'var(--text-muted)', writingMode: 'vertical-rl', transform: 'rotate(180deg)', letterSpacing: 1 }}>
         SOLITON
       </div>
+
+      {showImport && <ImportDialog onClose={() => setShowImport(false)} />}
     </div>
   );
 }

@@ -22,20 +22,31 @@ export interface SteadyStateResult {
   linkResults: Map<string, LinkResult>;
 }
 
-let _workspace: Workspace | null = null;
-let _solveCounter = 0;
+// Persist workspace across HMR — attach to globalThis to survive module reloads
+const _global = globalThis as unknown as { __solitonWasm?: Workspace; __solitonSolveCount?: number };
+let _solveCounter = _global.__solitonSolveCount || 0;
 
 /** Lazily initialise the WASM workspace — must be awaited before any solver call. */
 export async function getWorkspace(): Promise<Workspace> {
-  if (_workspace && _workspace.isLoaded) return _workspace;
-  _workspace = new Workspace();
-  await _workspace.loadModule();
-  return _workspace;
+  if (_global.__solitonWasm) {
+    try {
+      // Verify workspace is still functional
+      if (_global.__solitonWasm.isLoaded) return _global.__solitonWasm;
+    } catch {
+      // Workspace invalidated (e.g. HMR) — re-create
+    }
+  }
+  const ws = new Workspace();
+  await ws.loadModule();
+  _global.__solitonWasm = ws;
+  return ws;
 }
 
 /** Unique file prefix to avoid stale WASM filesystem collisions between solves */
 function solvePrefix(): string {
-  return `s${++_solveCounter}`;
+  _solveCounter++;
+  _global.__solitonSolveCount = _solveCounter;
+  return `s${_solveCounter}`;
 }
 
 /**

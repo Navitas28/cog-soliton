@@ -2,7 +2,7 @@
  * Serialize a NetworkModel to a valid EPANET INP string.
  * This is the single contract between the UI and the solver.
  */
-import type { NetworkModel, DemandPattern, SimulationOptions } from './types';
+import type { NetworkModel, DemandPattern, SimulationOptions, QualitySettings } from './types';
 
 function pad(s: string | number, width: number): string {
   return String(s).padEnd(width);
@@ -132,7 +132,7 @@ export function serializeToInp(model: NetworkModel): string {
 
   // [OPTIONS]
   push('[OPTIONS]');
-  pushOptions(push, model.options, model.patterns);
+  pushOptions(push, model.options, model.patterns, model.qualitySettings);
   push('');
 
   // [COORDINATES]
@@ -160,8 +160,63 @@ export function serializeToInp(model: NetworkModel): string {
   }
   push('');
 
-  // Empty sections required by EPANET
-  for (const section of ['[LABELS]', '[BACKDROP]', '[EMITTERS]', '[QUALITY]', '[SOURCES]', '[REACTIONS]', '[MIXING]', '[CONTROLS]', '[RULES]']) {
+  // [QUALITY] — initial quality at nodes (empty for now, EPANET sets defaults)
+  push('[QUALITY]');
+  push('');
+
+  // [SOURCES] — chemical injection points
+  push('[SOURCES]');
+  push(';Node            Type            Baseline        Pattern');
+  if (model.qualitySources) {
+    for (const src of model.qualitySources) {
+      push(` ${pad(src.nodeId, 16)}${pad(src.type, 16)}${pad(fmtNum(src.baseline, 4), 16)}${src.patternId}`);
+    }
+  }
+  push('');
+
+  // [REACTIONS] — decay coefficients
+  push('[REACTIONS]');
+  if (model.qualitySettings && model.qualitySettings.type !== 'None') {
+    push(` Order Bulk            1`);
+    push(` Order Tank            1`);
+    push(` Order Wall            1`);
+    push(` Global Bulk           ${fmtNum(model.qualitySettings.bulkCoeff, 4)}`);
+    push(` Global Wall           ${fmtNum(model.qualitySettings.wallCoeff, 4)}`);
+    push(` Limiting Potential    0`);
+    push(` Roughness Correlation 0`);
+  }
+  push('');
+
+  // [MIXING]
+  push('[MIXING]');
+  push('');
+
+  // [CONTROLS]
+  push('[CONTROLS]');
+  push('');
+
+  // [RULES] — rule-based controls
+  push('[RULES]');
+  if (model.rules) {
+    for (const rule of model.rules) {
+      if (!rule.enabled) continue;
+      push(`RULE ${rule.id}`);
+      for (const cond of rule.conditions) {
+        const elementType = guessElementType(model, cond.elementId);
+        push(`${cond.logic} ${elementType} ${cond.elementId} ${cond.property} ${cond.operator} ${cond.value}`);
+      }
+      for (const action of rule.actions) {
+        const elementType = guessElementType(model, action.elementId);
+        push(`THEN ${elementType} ${action.elementId} ${action.property} IS ${action.value}`);
+      }
+      push(`PRIORITY ${rule.priority}`);
+      push('');
+    }
+  }
+  push('');
+
+  // Empty remaining sections
+  for (const section of ['[LABELS]', '[BACKDROP]', '[EMITTERS]']) {
     push(section);
     push('');
   }
@@ -184,7 +239,7 @@ function pushTimes(push: (s: string) => void, opts: SimulationOptions) {
   push(` Statistic           NONE`);
 }
 
-function pushOptions(push: (s: string) => void, opts: SimulationOptions, patterns: DemandPattern[] = []) {
+function pushOptions(push: (s: string) => void, opts: SimulationOptions, patterns: DemandPattern[] = [], quality?: QualitySettings) {
   push(` Units               ${opts.flowUnits}`);
   push(` Headloss            ${opts.headloss}`);
   push(` Specific Gravity    1.0`);
@@ -200,7 +255,28 @@ function pushOptions(push: (s: string) => void, opts: SimulationOptions, pattern
   }
   push(` Demand Multiplier   ${opts.demandMultiplier}`);
   push(` Emitter Exponent    0.5`);
-  push(` Quality             None mg/L`);
+  // Quality option
+  const q = quality;
+  if (q && q.type === 'Age') {
+    push(` Quality             Age`);
+  } else if (q && q.type === 'Chemical') {
+    push(` Quality             Chemical ${q.chemicalName} ${q.chemicalUnits}`);
+  } else if (q && q.type === 'Trace') {
+    push(` Quality             Trace ${q.traceNodeId}`);
+  } else {
+    push(` Quality             None mg/L`);
+  }
   push(` Diffusivity         1.0`);
   push(` Tolerance           0.01`);
+}
+
+/** Guess element type from model for rule serialization */
+function guessElementType(model: NetworkModel, elementId: string): string {
+  if (model.tanks?.some(t => t.id === elementId)) return 'TANK';
+  if (model.reservoirs?.some(r => r.id === elementId)) return 'RESERVOIR';
+  if (model.pumps?.some(p => p.id === elementId)) return 'PUMP';
+  if (model.valves?.some(v => v.id === elementId)) return 'VALVE';
+  if (model.pipes?.some(p => p.id === elementId)) return 'PIPE';
+  if (model.junctions?.some(j => j.id === elementId)) return 'JUNCTION';
+  return 'NODE';
 }

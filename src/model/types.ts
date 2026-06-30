@@ -111,6 +111,48 @@ export interface DesignCriteria {
   designPeriodYears: number;     // design period (years)
 }
 
+/** Water quality simulation settings */
+export type QualityType = 'None' | 'Chemical' | 'Age' | 'Trace';
+
+export interface QualitySettings {
+  type: QualityType;
+  chemicalName: string;       // e.g. 'Chlorine'
+  chemicalUnits: string;      // e.g. 'mg/L'
+  traceNodeId: string;        // source node for trace analysis
+  bulkCoeff: number;          // global bulk decay coefficient (1/day), negative = decay
+  wallCoeff: number;          // global wall decay coefficient (m/day), negative = decay
+}
+
+export interface QualitySource {
+  nodeId: string;
+  type: 'CONCEN' | 'MASS' | 'SETPOINT' | 'FLOWPACED';
+  baseline: number;           // concentration or mass rate
+  patternId: string;          // time pattern (empty = constant)
+}
+
+/** Operational rule for pumps/valves based on conditions */
+export interface Rule {
+  id: string;
+  enabled: boolean;
+  conditions: RuleCondition[];
+  actions: RuleAction[];
+  priority: number;
+}
+
+export interface RuleCondition {
+  elementId: string;
+  property: 'LEVEL' | 'PRESSURE' | 'HEAD' | 'FLOW' | 'DEMAND' | 'STATUS';
+  operator: 'ABOVE' | 'BELOW' | 'IS';
+  value: number | string;
+  logic: 'IF' | 'AND' | 'OR';
+}
+
+export interface RuleAction {
+  elementId: string;
+  property: 'STATUS' | 'SETTING';
+  value: string | number;
+}
+
 /** The complete network model */
 export interface NetworkModel {
   title: string;
@@ -124,6 +166,9 @@ export interface NetworkModel {
   curves: Curve[];
   options: SimulationOptions;
   designCriteria: DesignCriteria;
+  qualitySettings: QualitySettings;
+  qualitySources: QualitySource[];
+  rules: Rule[];
 }
 
 /** Default simulation options */
@@ -159,6 +204,18 @@ export function defaultDesignCriteria(): DesignCriteria {
   };
 }
 
+/** Default quality settings */
+export function defaultQualitySettings(): QualitySettings {
+  return {
+    type: 'None',
+    chemicalName: 'Chlorine',
+    chemicalUnits: 'mg/L',
+    traceNodeId: '',
+    bulkCoeff: -0.5,
+    wallCoeff: -1.0,
+  };
+}
+
 /** Create an empty network model */
 export function createEmptyNetwork(title = 'Untitled Network'): NetworkModel {
   return {
@@ -173,5 +230,8 @@ export function createEmptyNetwork(title = 'Untitled Network'): NetworkModel {
     curves: [],
     options: defaultOptions(),
     designCriteria: defaultDesignCriteria(),
+    qualitySettings: defaultQualitySettings(),
+    qualitySources: [],
+    rules: [],
   };
 }

@@ -18,7 +18,7 @@
  */
 
 import type { NetworkModel, DemandPattern } from '../model/types';
-import { defaultOptions, defaultDesignCriteria } from '../model/types';
+import { defaultOptions, defaultDesignCriteria, defaultQualitySettings } from '../model/types';
 import { DEFAULT_DIURNAL_PATTERN } from '../model/demand';
 
 // Centre: 26.7922°N, 82.1998°E (Ram Janmabhoomi area)
@@ -253,6 +253,9 @@ export function createAyodhyaNetwork(scenario: AyodhyaScenario = '11-wards'): Ne
     curves: [],
     options,
     designCriteria: defaultDesignCriteria(),
+    qualitySettings: defaultQualitySettings(),
+    qualitySources: [],
+    rules: [],
   };
 }
 

@@ -18,7 +18,7 @@
  */
 
 import type { NetworkModel, DemandPattern } from '../model/types';
-import { defaultOptions, defaultDesignCriteria } from '../model/types';
+import { defaultOptions, defaultDesignCriteria, defaultQualitySettings } from '../model/types';
 import { DEFAULT_DIURNAL_PATTERN } from '../model/demand';
 
 const BAREILLY_CENTER = { lat: 28.3670, lng: 79.4304 };
@@ -188,6 +188,9 @@ export function createBareillyNetwork(scenario: BareillyScenario = 'full-city'):
     curves: [],
     options,
     designCriteria: defaultDesignCriteria(),
+    qualitySettings: defaultQualitySettings(),
+    qualitySources: [],
+    rules: [],
   };
 }
 

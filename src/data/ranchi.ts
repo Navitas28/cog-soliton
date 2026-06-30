@@ -16,7 +16,7 @@
  */
 
 import type { NetworkModel, DemandPattern } from '../model/types';
-import { defaultOptions, defaultDesignCriteria } from '../model/types';
+import { defaultOptions, defaultDesignCriteria, defaultQualitySettings } from '../model/types';
 import { DEFAULT_DIURNAL_PATTERN } from '../model/demand';
 
 const RANCHI_CENTER = { lat: 23.3441, lng: 85.3096 };
@@ -194,6 +194,9 @@ export function createRanchiNetwork(scenario: RanchiScenario = 'full-city'): Net
     curves: [],
     options,
     designCriteria: defaultDesignCriteria(),
+    qualitySettings: defaultQualitySettings(),
+    qualitySources: [],
+    rules: [],
   };
 }
 

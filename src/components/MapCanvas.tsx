@@ -13,6 +13,10 @@ import { buildNodeFeatures, buildLinkFeatures, buildLabelFeatures, offlineBlankS
 import { MapLegend } from './ColorLegend';
 import { ComparisonDashboard } from './ComparisonDashboard';
 import { ShortcutOverlay } from './ShortcutOverlay';
+import { CalibrationPanel } from './CalibrationPanel';
+import { FireFlowPanel } from './FireFlowPanel';
+import { ZonePanel } from './ZonePanel';
+import { CriticalityPanel } from './CriticalityPanel';
 import { SearchBox } from './SearchBox';
 import { CostPanel } from './CostPanel';
 import { OptimizerPanel } from './OptimizerPanel';
@@ -79,6 +83,10 @@ export function MapCanvas() {
   const [showCost, setShowCost] = useState(false);
   const [showOptimizer, setShowOptimizer] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
+  const [showCalibration, setShowCalibration] = useState(false);
+  const [showFireFlow, setShowFireFlow] = useState(false);
+  const [showZones, setShowZones] = useState(false);
+  const [showCriticality, setShowCriticality] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const toggleDropdown = (name: string) => setOpenDropdown(prev => prev === name ? null : name);
 
@@ -805,6 +813,22 @@ export function MapCanvas() {
                     <>
                       <div className="top-bar-dropdown-divider" />
                       <button className="top-bar-dropdown-item"
+                        onClick={() => { setShowFireFlow(true); setOpenDropdown(null); }}>
+                        🔥 Fire Flow Analysis
+                      </button>
+                      <button className="top-bar-dropdown-item"
+                        onClick={() => { setShowCriticality(true); setOpenDropdown(null); }}>
+                        ⚠ Criticality (N-1)
+                      </button>
+                      <button className="top-bar-dropdown-item"
+                        onClick={() => { setShowZones(true); setOpenDropdown(null); }}>
+                        🗺 DMA / Zones
+                      </button>
+                      <button className="top-bar-dropdown-item"
+                        onClick={() => { setShowCalibration(true); setOpenDropdown(null); }}>
+                        🎯 Calibrate (Field Data)
+                      </button>
+                      <button className="top-bar-dropdown-item"
                         onClick={() => { useNetworkStore.getState().setActiveView('twin'); setOpenDropdown(null); }}>
                         🌐 Digital Twin
                       </button>
@@ -890,6 +914,18 @@ export function MapCanvas() {
 
       {/* Comparison dashboard */}
       {showComparison && <ComparisonDashboard onClose={() => setShowComparison(false)} />}
+
+      {/* Fire flow panel */}
+      {showFireFlow && <FireFlowPanel onClose={() => setShowFireFlow(false)} />}
+
+      {/* Criticality panel */}
+      {showCriticality && <CriticalityPanel onClose={() => setShowCriticality(false)} />}
+
+      {/* Zones panel */}
+      {showZones && <ZonePanel onClose={() => setShowZones(false)} />}
+
+      {/* Calibration panel */}
+      {showCalibration && <CalibrationPanel onClose={() => setShowCalibration(false)} />}
 
       {/* Shortcut overlay */}
       {showShortcuts && <ShortcutOverlay onClose={() => setShowShortcuts(false)} />}

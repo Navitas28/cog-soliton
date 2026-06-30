@@ -18,7 +18,7 @@
  */
 
 import type { NetworkModel, DemandPattern } from '../model/types';
-import { defaultOptions, defaultDesignCriteria } from '../model/types';
+import { defaultOptions, defaultDesignCriteria, defaultQualitySettings } from '../model/types';
 import { DEFAULT_DIURNAL_PATTERN } from '../model/demand';
 
 // Centre: 20.2961°N, 85.8245°E (Lingaraj Temple area, Old Town)
@@ -249,6 +249,9 @@ export function createBhubaneswarNetwork(scenario: BhubaneswarScenario = 'full-c
     curves: [],
     options,
     designCriteria: defaultDesignCriteria(),
+    qualitySettings: defaultQualitySettings(),
+    qualitySources: [],
+    rules: [],
   };
 }
 

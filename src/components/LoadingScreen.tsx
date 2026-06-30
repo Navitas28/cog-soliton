@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { getWorkspace } from '../engine/engine';
 import { useNetworkStore } from '../store/networkStore';
 import { createAyodhyaNetwork } from '../data/ayodhya';
+import { defaultQualitySettings } from '../model/types';
 
 export function LoadingScreen({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
@@ -21,6 +22,10 @@ export function LoadingScreen({ children }: { children: React.ReactNode }) {
           try {
             const parsed = JSON.parse(raw);
             if (parsed && typeof parsed.title === 'string') {
+              // Backfill fields added in later phases
+              if (!parsed.qualitySettings) parsed.qualitySettings = defaultQualitySettings();
+              if (!parsed.qualitySources) parsed.qualitySources = [];
+              if (!parsed.rules) parsed.rules = [];
               useNetworkStore.getState().loadModel(parsed);
               restored = true;
             }

@@ -4,6 +4,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNetworkStore } from '../store/networkStore';
 import { DEFAULT_DIURNAL_PATTERN, computeBaseDemand, computeFireDemand, validatePatternAverage } from '../model/demand';
+import type { QualityType, QualitySource, Rule, RuleCondition, RuleAction } from '../model/types';
 
 export function ScenarioPanel() {
   const model = useNetworkStore(s => s.model);
@@ -269,6 +270,12 @@ function FireDemandCalc() {
       <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>
         Q = 100 × sqrt(P) LPM. Apply as additional demand at fire hydrant junctions.
       </div>
+
+      {/* Water Quality Settings */}
+      <QualitySection />
+
+      {/* Rule-Based Controls */}
+      <RulesSection />
     </div>
   );
 }
@@ -277,6 +284,294 @@ const presetBtn: React.CSSProperties = {
   padding: '2px 6px', border: '1px solid #ccc', borderRadius: 3, background: '#fff',
   cursor: 'pointer', fontSize: 10,
 };
+
+/* ─── Water Quality Section ─── */
+function QualitySection() {
+  const model = useNetworkStore(s => s.model);
+  const loadModel = useNetworkStore(s => s.loadModel);
+  const qs = model.qualitySettings || { type: 'None' as QualityType, chemicalName: 'Chlorine', chemicalUnits: 'mg/L', traceNodeId: '', bulkCoeff: -0.5, wallCoeff: -1.0 };
+
+  const updateQuality = (updates: Partial<typeof qs>) => {
+    loadModel({ ...model, qualitySettings: { ...qs, ...updates } });
+  };
+
+  const sources = model.qualitySources || [];
+
+  const addSource = () => {
+    const firstRes = model.reservoirs[0];
+    const newSource: QualitySource = {
+      nodeId: firstRes?.id || '',
+      type: 'CONCEN',
+      baseline: 1.0,
+      patternId: '',
+    };
+    loadModel({ ...model, qualitySources: [...sources, newSource] });
+  };
+
+  const removeSource = (idx: number) => {
+    loadModel({ ...model, qualitySources: sources.filter((_, i) => i !== idx) });
+  };
+
+  const updateSource = (idx: number, updates: Partial<QualitySource>) => {
+    loadModel({
+      ...model,
+      qualitySources: sources.map((s, i) => i === idx ? { ...s, ...updates } : s),
+    });
+  };
+
+  const allNodeIds = [
+    ...model.reservoirs.map(r => r.id),
+    ...model.junctions.map(j => j.id),
+    ...model.tanks.map(t => t.id),
+  ];
+
+  return (
+    <div className="panel-section">
+      <h4>Water Quality</h4>
+      <div className="field-row">
+        <span className="field-label">Type</span>
+        <select className="field-select" value={qs.type}
+          onChange={e => updateQuality({ type: e.target.value as QualityType })}>
+          <option value="None">None</option>
+          <option value="Age">Water Age</option>
+          <option value="Chemical">Chemical (Chlorine)</option>
+          <option value="Trace">Source Trace</option>
+        </select>
+      </div>
+
+      {qs.type === 'Chemical' && (
+        <>
+          <div className="field-row">
+            <span className="field-label">Chemical</span>
+            <input className="field-input" value={qs.chemicalName}
+              onChange={e => updateQuality({ chemicalName: e.target.value })} />
+          </div>
+          <div className="field-row">
+            <span className="field-label">Bulk Coeff</span>
+            <input className="field-input" type="number" step="0.1"
+              value={qs.bulkCoeff}
+              onChange={e => updateQuality({ bulkCoeff: parseFloat(e.target.value) || 0 })} />
+            <span className="field-unit">1/day</span>
+          </div>
+          <div className="field-row">
+            <span className="field-label">Wall Coeff</span>
+            <input className="field-input" type="number" step="0.1"
+              value={qs.wallCoeff}
+              onChange={e => updateQuality({ wallCoeff: parseFloat(e.target.value) || 0 })} />
+            <span className="field-unit">m/day</span>
+          </div>
+
+          {/* Sources */}
+          <div style={{ marginTop: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#666' }}>Injection Sources</span>
+              <button onClick={addSource} style={{ ...presetBtn, color: '#3a5fcf' }}>+ Add</button>
+            </div>
+            {sources.map((src, idx) => (
+              <div key={idx} style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 4 }}>
+                <select className="field-select" style={{ flex: 1, fontSize: 11 }}
+                  value={src.nodeId}
+                  onChange={e => updateSource(idx, { nodeId: e.target.value })}>
+                  {allNodeIds.map(id => <option key={id} value={id}>{id}</option>)}
+                </select>
+                <select className="field-select" style={{ width: 70, fontSize: 11 }}
+                  value={src.type}
+                  onChange={e => updateSource(idx, { type: e.target.value as QualitySource['type'] })}>
+                  <option value="CONCEN">Concen</option>
+                  <option value="MASS">Mass</option>
+                  <option value="SETPOINT">Setpoint</option>
+                  <option value="FLOWPACED">FlowPaced</option>
+                </select>
+                <input className="field-input" type="number" step="0.1"
+                  style={{ width: 50, fontSize: 11 }}
+                  value={src.baseline}
+                  onChange={e => updateSource(idx, { baseline: parseFloat(e.target.value) || 0 })} />
+                <button onClick={() => removeSource(idx)} style={{ border: 'none', background: 'none', color: '#e74c3c', cursor: 'pointer', fontSize: 14 }}>×</button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {qs.type === 'Trace' && (
+        <div className="field-row">
+          <span className="field-label">Trace Node</span>
+          <select className="field-select" value={qs.traceNodeId}
+            onChange={e => updateQuality({ traceNodeId: e.target.value })}>
+            <option value="">— select —</option>
+            {allNodeIds.map(id => <option key={id} value={id}>{id}</option>)}
+          </select>
+        </div>
+      )}
+
+      {qs.type !== 'None' && (
+        <div style={{ fontSize: 10, color: '#999', marginTop: 4 }}>
+          Requires EPS mode. Quality results computed alongside hydraulics.
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Rules Section ─── */
+function RulesSection() {
+  const model = useNetworkStore(s => s.model);
+  const loadModel = useNetworkStore(s => s.loadModel);
+  const rules = model.rules || [];
+
+  const addRule = () => {
+    const firstTank = model.tanks[0];
+    const firstPump = model.pumps[0];
+    const newRule: Rule = {
+      id: `Rule${rules.length + 1}`,
+      enabled: true,
+      priority: rules.length + 1,
+      conditions: [{
+        elementId: firstTank?.id || '',
+        property: 'LEVEL',
+        operator: 'BELOW',
+        value: 2.0,
+        logic: 'IF',
+      }],
+      actions: [{
+        elementId: firstPump?.id || '',
+        property: 'STATUS',
+        value: 'OPEN',
+      }],
+    };
+    loadModel({ ...model, rules: [...rules, newRule] });
+  };
+
+  const removeRule = (idx: number) => {
+    loadModel({ ...model, rules: rules.filter((_, i) => i !== idx) });
+  };
+
+  const toggleRule = (idx: number) => {
+    loadModel({
+      ...model,
+      rules: rules.map((r, i) => i === idx ? { ...r, enabled: !r.enabled } : r),
+    });
+  };
+
+  const updateCondition = (ruleIdx: number, condIdx: number, updates: Partial<RuleCondition>) => {
+    loadModel({
+      ...model,
+      rules: rules.map((r, ri) => ri === ruleIdx ? {
+        ...r,
+        conditions: r.conditions.map((c, ci) => ci === condIdx ? { ...c, ...updates } : c),
+      } : r),
+    });
+  };
+
+  const updateAction = (ruleIdx: number, actIdx: number, updates: Partial<RuleAction>) => {
+    loadModel({
+      ...model,
+      rules: rules.map((r, ri) => ri === ruleIdx ? {
+        ...r,
+        actions: r.actions.map((a, ai) => ai === actIdx ? { ...a, ...updates } : a),
+      } : r),
+    });
+  };
+
+  const allElementIds = [
+    ...model.tanks.map(t => t.id),
+    ...model.pumps.map(p => p.id),
+    ...model.valves.map(v => v.id),
+    ...model.junctions.map(j => j.id),
+  ];
+
+  return (
+    <div className="panel-section">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h4>Operational Rules</h4>
+        <button onClick={addRule} style={{ ...presetBtn, color: '#3a5fcf' }}>+ Add Rule</button>
+      </div>
+
+      {rules.length === 0 && (
+        <div style={{ fontSize: 11, color: '#999', padding: '8px 0' }}>
+          No rules defined. Rules automate pump/valve control based on tank levels, time, or pressures.
+        </div>
+      )}
+
+      {rules.map((rule, ri) => (
+        <div key={ri} className="rule-card" style={{
+          border: '1px solid #e8e8e8', borderRadius: 8, padding: 8, marginBottom: 6,
+          opacity: rule.enabled ? 1 : 0.5, background: rule.enabled ? '#fafbfd' : '#f5f5f5',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#3a5fcf' }}>{rule.id}</span>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button onClick={() => toggleRule(ri)} style={{ ...presetBtn, fontSize: 9 }}>
+                {rule.enabled ? 'ON' : 'OFF'}
+              </button>
+              <button onClick={() => removeRule(ri)} style={{ ...presetBtn, color: '#e74c3c', fontSize: 9 }}>×</button>
+            </div>
+          </div>
+
+          {/* Condition */}
+          {rule.conditions.map((cond, ci) => (
+            <div key={ci} style={{ display: 'flex', gap: 3, alignItems: 'center', marginBottom: 3, fontSize: 10 }}>
+              <span style={{ fontWeight: 600, color: '#888', width: 20 }}>{cond.logic}</span>
+              <select className="field-select" style={{ flex: 1, fontSize: 10 }}
+                value={cond.elementId}
+                onChange={e => updateCondition(ri, ci, { elementId: e.target.value })}>
+                {allElementIds.map(id => <option key={id} value={id}>{id}</option>)}
+              </select>
+              <select className="field-select" style={{ width: 55, fontSize: 10 }}
+                value={cond.property}
+                onChange={e => updateCondition(ri, ci, { property: e.target.value as RuleCondition['property'] })}>
+                <option value="LEVEL">Level</option>
+                <option value="PRESSURE">Pressure</option>
+                <option value="HEAD">Head</option>
+                <option value="FLOW">Flow</option>
+                <option value="STATUS">Status</option>
+              </select>
+              <select className="field-select" style={{ width: 55, fontSize: 10 }}
+                value={cond.operator}
+                onChange={e => updateCondition(ri, ci, { operator: e.target.value as RuleCondition['operator'] })}>
+                <option value="BELOW">Below</option>
+                <option value="ABOVE">Above</option>
+                <option value="IS">Is</option>
+              </select>
+              <input className="field-input" type="number" step="0.1"
+                style={{ width: 40, fontSize: 10 }}
+                value={Number(cond.value)}
+                onChange={e => updateCondition(ri, ci, { value: parseFloat(e.target.value) || 0 })} />
+            </div>
+          ))}
+
+          {/* Action */}
+          {rule.actions.map((act, ai) => (
+            <div key={ai} style={{ display: 'flex', gap: 3, alignItems: 'center', fontSize: 10 }}>
+              <span style={{ fontWeight: 600, color: '#27ae60', width: 20 }}>THEN</span>
+              <select className="field-select" style={{ flex: 1, fontSize: 10 }}
+                value={act.elementId}
+                onChange={e => updateAction(ri, ai, { elementId: e.target.value })}>
+                {allElementIds.map(id => <option key={id} value={id}>{id}</option>)}
+              </select>
+              <select className="field-select" style={{ width: 55, fontSize: 10 }}
+                value={act.property}
+                onChange={e => updateAction(ri, ai, { property: e.target.value as RuleAction['property'] })}>
+                <option value="STATUS">Status</option>
+                <option value="SETTING">Setting</option>
+              </select>
+              <select className="field-select" style={{ width: 55, fontSize: 10 }}
+                value={String(act.value)}
+                onChange={e => updateAction(ri, ai, { value: e.target.value })}>
+                <option value="OPEN">Open</option>
+                <option value="CLOSED">Closed</option>
+              </select>
+            </div>
+          ))}
+        </div>
+      ))}
+
+      <div style={{ fontSize: 10, color: '#999', marginTop: 4 }}>
+        Rules execute during EPS. Example: "IF Tank T1 level BELOW 2m THEN Pump PU1 OPEN".
+      </div>
+    </div>
+  );
+}
 
 function DemandCalc({ lpcd }: { lpcd: number }) {
   const [pop, setPop] = useState(1000);

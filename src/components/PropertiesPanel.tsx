@@ -1,8 +1,20 @@
+import { useState } from 'react';
 import { useNetworkStore } from '../store/networkStore';
 import { getCostPerMeter, MATERIAL_LABELS } from '../data/pipeCosts';
 import type { PipeMaterial } from '../model/types';
+import { Sparkline, TimeSeriesModal } from './TimeSeriesChart';
+import { extractNodeSeries, extractLinkSeries } from '../model/timeSeries';
+import type { NodeSeriesParam, LinkSeriesParam } from '../model/timeSeries';
 
 export function PropertiesPanel() {
+  const [chartModal, setChartModal] = useState<{
+    elementId: string;
+    elementType: 'node' | 'link';
+    param: NodeSeriesParam | LinkSeriesParam;
+    label: string;
+    unit: string;
+  } | null>(null);
+
   const selectedId = useNetworkStore(s => s.selectedElementId);
   const selectedType = useNetworkStore(s => s.selectedElementType);
   const model = useNetworkStore(s => s.model);
@@ -163,6 +175,8 @@ export function PropertiesPanel() {
               pass={nodeResult.pressure >= pressureFloor} />
             <ResultRow label="Head" value={nodeResult.head} unit="m" />
             <ResultRow label="Demand" value={nodeResult.demand} unit="LPS" />
+            <NodeSparklineSection nodeId={junction.id} param="pressure" threshold={pressureFloor}
+              onOpenChart={(param) => setChartModal({ elementId: junction.id, elementType: 'node', param, label: 'Pressure', unit: 'm' })} />
           </div>
         )}
         <div className="panel-section">
@@ -170,6 +184,7 @@ export function PropertiesPanel() {
             Delete Junction
           </button>
         </div>
+        {chartModal && <TimeSeriesModal config={chartModal} onClose={() => setChartModal(null)} />}
       </div>
     );
   }
@@ -195,6 +210,8 @@ export function PropertiesPanel() {
             <h4>Results</h4>
             <ResultRow label="Head" value={nodeResult.head} unit="m" />
             <ResultRow label="Net Flow" value={nodeResult.demand} unit="LPS" />
+            <NodeSparklineSection nodeId={res.id} param="demand"
+              onOpenChart={(param) => setChartModal({ elementId: res.id, elementType: 'node', param, label: 'Demand', unit: 'LPS' })} />
           </div>
         )}
         <div className="panel-section">
@@ -202,6 +219,7 @@ export function PropertiesPanel() {
             Delete Reservoir
           </button>
         </div>
+        {chartModal && <TimeSeriesModal config={chartModal} onClose={() => setChartModal(null)} />}
       </div>
     );
   }
@@ -231,6 +249,8 @@ export function PropertiesPanel() {
             <h4>Results</h4>
             <ResultRow label="Pressure" value={nodeResult.pressure} unit="m" />
             <ResultRow label="Head" value={nodeResult.head} unit="m" />
+            <NodeSparklineSection nodeId={tank.id} param="tankLevel"
+              onOpenChart={(param) => setChartModal({ elementId: tank.id, elementType: 'node', param, label: 'Tank Level', unit: 'm' })} />
           </div>
         )}
         <div className="panel-section">
@@ -238,6 +258,7 @@ export function PropertiesPanel() {
             Delete Tank
           </button>
         </div>
+        {chartModal && <TimeSeriesModal config={chartModal} onClose={() => setChartModal(null)} />}
       </div>
     );
   }
@@ -292,6 +313,8 @@ export function PropertiesPanel() {
             <ResultRow label="Flow" value={linkResult.flow} unit="LPS" />
             <VelocityRow value={linkResult.velocity} criteria={model.designCriteria} />
             <ResultRow label="Head Loss" value={linkResult.headloss} unit="m/km" />
+            <LinkSparklineSection linkId={pipe.id} param="flow"
+              onOpenChart={(param) => setChartModal({ elementId: pipe.id, elementType: 'link', param, label: 'Flow', unit: 'LPS' })} />
           </div>
         )}
         <div className="panel-section">
@@ -299,6 +322,7 @@ export function PropertiesPanel() {
             Delete Pipe
           </button>
         </div>
+        {chartModal && <TimeSeriesModal config={chartModal} onClose={() => setChartModal(null)} />}
       </div>
     );
   }
@@ -337,6 +361,8 @@ export function PropertiesPanel() {
             <ResultRow label="Flow" value={linkResult.flow} unit="LPS" />
             <ResultRow label="Velocity" value={linkResult.velocity} unit="m/s" />
             <ResultRow label="Head Loss" value={linkResult.headloss} unit="m" />
+            <LinkSparklineSection linkId={pump.id} param="flow"
+              onOpenChart={(param) => setChartModal({ elementId: pump.id, elementType: 'link', param, label: 'Flow', unit: 'LPS' })} />
           </div>
         )}
         <div className="panel-section">
@@ -344,6 +370,7 @@ export function PropertiesPanel() {
             Delete Pump
           </button>
         </div>
+        {chartModal && <TimeSeriesModal config={chartModal} onClose={() => setChartModal(null)} />}
       </div>
     );
   }
@@ -386,6 +413,8 @@ export function PropertiesPanel() {
             <ResultRow label="Flow" value={linkResult.flow} unit="LPS" />
             <ResultRow label="Velocity" value={linkResult.velocity} unit="m/s" />
             <ResultRow label="Head Loss" value={linkResult.headloss} unit="m" />
+            <LinkSparklineSection linkId={valve.id} param="flow"
+              onOpenChart={(param) => setChartModal({ elementId: valve.id, elementType: 'link', param, label: 'Flow', unit: 'LPS' })} />
           </div>
         )}
         <div className="panel-section">
@@ -393,6 +422,7 @@ export function PropertiesPanel() {
             Delete Valve
           </button>
         </div>
+        {chartModal && <TimeSeriesModal config={chartModal} onClose={() => setChartModal(null)} />}
       </div>
     );
   }
@@ -439,6 +469,61 @@ function ResultRow({ label, value, unit, pass }: {
         </span>
       )}
     </div>
+  );
+}
+
+// Sparkline section for nodes (junction/tank)
+function NodeSparklineSection({ nodeId, param, threshold, onOpenChart }: {
+  nodeId: string;
+  param: NodeSeriesParam;
+  threshold?: number;
+  onOpenChart: (param: NodeSeriesParam) => void;
+}) {
+  const epsResult = useNetworkStore(s => s.epsResult);
+  if (!epsResult) return null;
+
+  const series = extractNodeSeries(epsResult, nodeId, param);
+  if (series.length < 2) return null;
+
+  return (
+    <>
+      <div onClick={() => onOpenChart(param)}>
+        <Sparkline data={series} threshold={threshold} />
+      </div>
+      <button className="view-chart-btn" onClick={() => onOpenChart(param)}>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M1 10l3-4 3 2 3-5 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        View Time Series
+      </button>
+    </>
+  );
+}
+
+// Sparkline section for links (pipe/pump/valve)
+function LinkSparklineSection({ linkId, param, onOpenChart }: {
+  linkId: string;
+  param: LinkSeriesParam;
+  onOpenChart: (param: LinkSeriesParam) => void;
+}) {
+  const epsResult = useNetworkStore(s => s.epsResult);
+  if (!epsResult) return null;
+
+  const series = extractLinkSeries(epsResult, linkId, param);
+  if (series.length < 2) return null;
+
+  return (
+    <>
+      <div onClick={() => onOpenChart(param)}>
+        <Sparkline data={series} color="#e67e22" />
+      </div>
+      <button className="view-chart-btn" onClick={() => onOpenChart(param)}>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M1 10l3-4 3 2 3-5 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        View Time Series
+      </button>
+    </>
   );
 }
 

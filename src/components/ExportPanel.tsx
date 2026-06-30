@@ -193,8 +193,8 @@ export function ExportPanel() {
                 <button className="export-dropdown-item" onClick={printSummary}>
                   Print Summary
                 </button>
-                <button className="export-dropdown-item" onClick={exportPdf}>
-                  PDF Report
+                <button className="export-dropdown-item" onClick={exportPdf} style={{ fontWeight: 600, color: '#3a5fcf' }}>
+                  Generate DPR (PDF)
                 </button>
               </>
             )}
