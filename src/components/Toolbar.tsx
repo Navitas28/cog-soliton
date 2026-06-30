@@ -6,6 +6,8 @@ const tools: { id: DrawingTool; label: string; icon: string }[] = [
   { id: 'junction', label: 'Place Junction (J)', icon: '●' },
   { id: 'tank', label: 'Place Tank (T)', icon: '□' },
   { id: 'pipe', label: 'Draw Pipe (P)', icon: '─' },
+  { id: 'pump', label: 'Draw Pump (U)', icon: '⊕' },
+  { id: 'valve', label: 'Draw Valve (V)', icon: '⊘' },
 ];
 
 export function Toolbar() {

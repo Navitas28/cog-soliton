@@ -10,6 +10,8 @@ export function PropertiesPanel() {
   const updateReservoir = useNetworkStore(s => s.updateReservoir);
   const updatePipe = useNetworkStore(s => s.updatePipe);
   const updateTank = useNetworkStore(s => s.updateTank);
+  const updatePump = useNetworkStore(s => s.updatePump);
+  const updateValve = useNetworkStore(s => s.updateValve);
   const deleteElement = useNetworkStore(s => s.deleteElement);
 
   if (!selectedId || !selectedType) {
@@ -36,6 +38,14 @@ export function PropertiesPanel() {
           <div className="field-row">
             <span className="field-label">Pipes</span>
             <span>{model.pipes.length}</span>
+          </div>
+          <div className="field-row">
+            <span className="field-label">Pumps</span>
+            <span>{model.pumps.length}</span>
+          </div>
+          <div className="field-row">
+            <span className="field-label">Valves</span>
+            <span>{model.valves.length}</span>
           </div>
         </div>
       </div>
@@ -192,6 +202,100 @@ export function PropertiesPanel() {
         <div className="panel-section">
           <button className="delete-btn" onClick={() => deleteElement(pipe.id, 'pipe')}>
             Delete Pipe
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (selectedType === 'pump') {
+    const pump = model.pumps.find(p => p.id === selectedId);
+    if (!pump) return null;
+
+    return (
+      <div className="properties-panel">
+        <div className="panel-header">Pump — {pump.id}</div>
+        <div className="panel-section">
+          <h4>Properties</h4>
+          <div className="field-row">
+            <span className="field-label">From → To</span>
+            <span style={{ fontSize: 13 }}>{pump.fromNode} → {pump.toNode}</span>
+          </div>
+          <FieldRow label="Power" value={pump.power} unit="kW"
+            onChange={v => updatePump(pump.id, { power: v })} />
+          <FieldRow label="Speed" value={pump.speed} unit="×"
+            onChange={v => updatePump(pump.id, { speed: v })} />
+          <div className="field-row">
+            <span className="field-label">Curve ID</span>
+            <input className="field-input" type="text" value={pump.curveId}
+              onChange={e => updatePump(pump.id, { curveId: e.target.value })} />
+          </div>
+          <div className="field-row">
+            <span className="field-label">Pattern ID</span>
+            <input className="field-input" type="text" value={pump.patternId}
+              onChange={e => updatePump(pump.id, { patternId: e.target.value })} />
+          </div>
+        </div>
+        {linkResult && (
+          <div className="panel-section">
+            <h4>Results</h4>
+            <ResultRow label="Flow" value={linkResult.flow} unit="LPS" />
+            <ResultRow label="Velocity" value={linkResult.velocity} unit="m/s" />
+            <ResultRow label="Head Loss" value={linkResult.headloss} unit="m" />
+          </div>
+        )}
+        <div className="panel-section">
+          <button className="delete-btn" onClick={() => deleteElement(pump.id, 'pump')}>
+            Delete Pump
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (selectedType === 'valve') {
+    const valve = model.valves.find(v => v.id === selectedId);
+    if (!valve) return null;
+
+    return (
+      <div className="properties-panel">
+        <div className="panel-header">Valve — {valve.id}</div>
+        <div className="panel-section">
+          <h4>Properties</h4>
+          <div className="field-row">
+            <span className="field-label">From → To</span>
+            <span style={{ fontSize: 13 }}>{valve.fromNode} → {valve.toNode}</span>
+          </div>
+          <FieldRow label="Diameter" value={valve.diameter} unit="mm"
+            onChange={v => updateValve(valve.id, { diameter: v })} />
+          <div className="field-row">
+            <span className="field-label">Type</span>
+            <select className="field-select" value={valve.type}
+              onChange={e => updateValve(valve.id, { type: e.target.value as any })}>
+              <option value="PRV">PRV — Pressure Reducing</option>
+              <option value="PSV">PSV — Pressure Sustaining</option>
+              <option value="PBV">PBV — Pressure Breaker</option>
+              <option value="FCV">FCV — Flow Control</option>
+              <option value="TCV">TCV — Throttle Control</option>
+              <option value="GPV">GPV — General Purpose</option>
+            </select>
+          </div>
+          <FieldRow label="Setting" value={valve.setting} unit={valve.type === 'FCV' ? 'LPS' : 'm'}
+            onChange={v => updateValve(valve.id, { setting: v })} />
+          <FieldRow label="Minor Loss" value={valve.minorLoss} unit=""
+            onChange={v => updateValve(valve.id, { minorLoss: v })} />
+        </div>
+        {linkResult && (
+          <div className="panel-section">
+            <h4>Results</h4>
+            <ResultRow label="Flow" value={linkResult.flow} unit="LPS" />
+            <ResultRow label="Velocity" value={linkResult.velocity} unit="m/s" />
+            <ResultRow label="Head Loss" value={linkResult.headloss} unit="m" />
+          </div>
+        )}
+        <div className="panel-section">
+          <button className="delete-btn" onClick={() => deleteElement(valve.id, 'valve')}>
+            Delete Valve
           </button>
         </div>
       </div>
