@@ -1,11 +1,11 @@
 import { useNetworkStore, type DrawingTool } from '../store/networkStore';
 
 const tools: { id: DrawingTool; label: string; icon: string }[] = [
-  { id: 'select', label: 'Select', icon: '⬚' },
-  { id: 'reservoir', label: 'Reservoir', icon: '▽' },
-  { id: 'junction', label: 'Junction', icon: '●' },
-  { id: 'tank', label: 'Tank', icon: '□' },
-  { id: 'pipe', label: 'Pipe', icon: '─' },
+  { id: 'select', label: 'Select (S)', icon: '⬚' },
+  { id: 'reservoir', label: 'Place Reservoir (R)', icon: '▽' },
+  { id: 'junction', label: 'Place Junction (J)', icon: '●' },
+  { id: 'tank', label: 'Place Tank (T)', icon: '□' },
+  { id: 'pipe', label: 'Draw Pipe (P)', icon: '─' },
 ];
 
 export function Toolbar() {
@@ -14,7 +14,16 @@ export function Toolbar() {
 
   return (
     <div className="tool-rail">
-      <div style={{ fontSize: 11, color: '#8a8a9e', marginBottom: 4, fontWeight: 600 }}>S</div>
+      {/* Logo slot */}
+      <div style={{
+        width: 36, height: 36, borderRadius: 8,
+        background: 'linear-gradient(135deg, #3a5fcf, #2980b9)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: '#fff', fontSize: 16, fontWeight: 800, letterSpacing: -1,
+        marginBottom: 4,
+      }}>
+        S
+      </div>
       <div className="tool-divider" />
       {tools.map(t => (
         <button
@@ -26,6 +35,10 @@ export function Toolbar() {
           {t.icon}
         </button>
       ))}
+      <div style={{ flex: 1 }} />
+      <div style={{ fontSize: 8, color: '#555', writingMode: 'vertical-rl', transform: 'rotate(180deg)', letterSpacing: 1 }}>
+        SOLITON
+      </div>
     </div>
   );
 }

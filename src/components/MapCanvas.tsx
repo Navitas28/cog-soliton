@@ -5,6 +5,7 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import { useNetworkStore } from '../store/networkStore';
 import { DemoLoader } from './DemoLoader';
+import { ExportPanel } from './ExportPanel';
 import type { NodeResult, LinkResult } from '../engine/engine';
 
 interface ViewTransform { offsetX: number; offsetY: number; scale: number }
@@ -338,6 +339,8 @@ export function MapCanvas() {
             }).length}/{model.junctions.length} pass
           </div>
         )}
+
+        <ExportPanel />
 
         {/* EPS time slider in top bar */}
         {epsResult && (
