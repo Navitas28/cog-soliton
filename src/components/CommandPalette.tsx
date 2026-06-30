@@ -12,7 +12,7 @@ interface PaletteAction {
   execute: () => void;
 }
 
-export function CommandPalette({ onClose }: { onClose: () => void }) {
+export function CommandPalette({ onClose, onNewProject }: { onClose: () => void; onNewProject?: () => void }) {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -31,6 +31,9 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
   const hasResults = !!(solveResult || epsResult);
 
   const actions: PaletteAction[] = useMemo(() => [
+    // Project
+    { id: 'new-project', label: 'New Project', description: 'Start a new network for any city', category: 'Project', available: true, execute: () => { onClose(); onNewProject?.(); } },
+
     // Design
     { id: 'tool-select', label: 'Select Tool', description: 'Switch to selection mode', category: 'Design', shortcut: 'S', available: true, execute: () => { setActiveTool('select'); onClose(); } },
     { id: 'tool-reservoir', label: 'Place Reservoir', description: 'Add a water source node', category: 'Design', shortcut: 'R', available: true, execute: () => { setActiveTool('reservoir'); onClose(); } },

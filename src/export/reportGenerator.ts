@@ -273,10 +273,76 @@ export function generateReport(data: ReportData): void {
       addText(doc, '(Map screenshot not available — canvas may be tainted by cross-origin tiles)', MARGIN, y + 30, { size: 10, color: MUTED });
     }
   } else {
+    // Draw schematic network diagram as fallback
+    const schematicH = 110;
     doc.setFillColor(247, 248, 252);
-    doc.roundedRect(MARGIN, y, CONTENT_W, 100, 4, 4, 'F');
-    addText(doc, 'Network Map', PAGE_W / 2, y + 45, { size: 14, color: [200, 200, 210], align: 'center' });
-    addText(doc, '(Map screenshot not available)', PAGE_W / 2, y + 55, { size: 10, color: MUTED, align: 'center' });
+    doc.roundedRect(MARGIN, y, CONTENT_W, schematicH, 4, 4, 'F');
+
+    const allNodes = [...model.reservoirs, ...model.tanks, ...model.junctions];
+    if (allNodes.length > 0) {
+      // Compute bounds
+      const xs = allNodes.map(n => n.x);
+      const ys = allNodes.map(n => n.y);
+      const minX = Math.min(...xs), maxX = Math.max(...xs);
+      const minY = Math.min(...ys), maxY = Math.max(...ys);
+      const rangeX = maxX - minX || 1;
+      const rangeY = maxY - minY || 1;
+      const pad = 12;
+      const drawW = CONTENT_W - pad * 2;
+      const drawH = schematicH - pad * 2;
+      const toX = (x: number) => MARGIN + pad + ((x - minX) / rangeX) * drawW;
+      const toY = (ly: number) => y + pad + drawH - ((ly - minY) / rangeY) * drawH; // flip Y
+
+      // Draw pipes
+      doc.setLineWidth(0.4);
+      for (const pipe of model.pipes) {
+        const from = allNodes.find(n => n.id === pipe.fromNode);
+        const to = allNodes.find(n => n.id === pipe.toNode);
+        if (from && to) {
+          // Color by velocity result
+          const lr = results.linkResults.get(pipe.id);
+          if (lr) {
+            const v = Math.abs(lr.velocity);
+            if (v >= dc.velocityEconomicMin && v <= dc.velocityEconomicMax) doc.setDrawColor(46, 204, 113);
+            else if (v >= dc.velocityMin && v <= dc.velocityMax) doc.setDrawColor(243, 156, 18);
+            else doc.setDrawColor(231, 76, 60);
+          } else {
+            doc.setDrawColor(180, 180, 180);
+          }
+          doc.line(toX(from.x), toY(from.y), toX(to.x), toY(to.y));
+        }
+      }
+
+      // Draw nodes
+      for (const n of allNodes) {
+        const px = toX(n.x), py = toY(n.y);
+        const isRes = model.reservoirs.some(r => r.id === n.id);
+        const isTank = model.tanks.some(t => t.id === n.id);
+        const nr = results.nodeResults.get(n.id);
+
+        if (isRes) {
+          doc.setFillColor(0, 128, 255);
+          doc.rect(px - 2.5, py - 2.5, 5, 5, 'F');
+        } else if (isTank) {
+          doc.setFillColor(128, 0, 255);
+          doc.rect(px - 2, py - 2, 4, 4, 'F');
+        } else {
+          const pass = nr && nr.pressure >= dc.residualPressureFloor;
+          doc.setFillColor(pass ? 46 : 231, pass ? 204 : 76, pass ? 113 : 60);
+          doc.circle(px, py, 1.5, 'F');
+        }
+
+        // Label
+        doc.setFontSize(4);
+        doc.setTextColor(80, 80, 80);
+        doc.text(n.id, px + 3, py + 1);
+      }
+
+      addText(doc, 'Figure 1: Network schematic with hydraulic results', PAGE_W / 2, y + schematicH + 4, { size: 8, color: MUTED, align: 'center' });
+    } else {
+      addText(doc, '(No network data)', PAGE_W / 2, y + 50, { size: 10, color: MUTED, align: 'center' });
+    }
+    y += schematicH + 8;
   }
 
   // Legend

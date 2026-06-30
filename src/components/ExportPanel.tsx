@@ -162,8 +162,14 @@ export function ExportPanel() {
     let mapImageDataUrl: string | undefined;
     try {
       const mapCanvas = document.querySelector('.map-container canvas') as HTMLCanvasElement;
-      if (mapCanvas) mapImageDataUrl = mapCanvas.toDataURL('image/png');
-    } catch { /* canvas tainted or not available */ }
+      if (mapCanvas) {
+        mapImageDataUrl = mapCanvas.toDataURL('image/png');
+        // Verify it's not a blank image (all transparent)
+        if (mapImageDataUrl.length < 1000) mapImageDataUrl = undefined;
+      }
+    } catch (err) {
+      console.warn('Map screenshot failed (canvas tainted?):', err);
+    }
     generateReport({
       model,
       results: { nodeResults, linkResults },

@@ -21,6 +21,7 @@ import { DemandWizard } from './DemandWizard';
 import { SearchBox } from './SearchBox';
 import { WorkflowStepper } from './WorkflowStepper';
 import { CommandPalette } from './CommandPalette';
+import { NewProjectDialog } from './NewProjectDialog';
 import { CostPanel } from './CostPanel';
 import { OptimizerPanel } from './OptimizerPanel';
 import { loadNetworkIcons } from './mapIcons';
@@ -97,6 +98,7 @@ export function MapCanvas() {
   const [showFlowLabels, setShowFlowLabels] = useState(true);
   const [showLegend, setShowLegend] = useState(true);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [showNewProject, setShowNewProject] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const toggleDropdown = (name: string) => setOpenDropdown(prev => prev === name ? null : name);
 
@@ -178,6 +180,7 @@ export function MapCanvas() {
       center: [82.00, 26.85], // India — will fitBounds when network loads
       zoom: 5,
       attributionControl: false,
+      preserveDrawingBuffer: true, // Required for canvas.toDataURL() in DPR export
     });
 
     map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
@@ -758,6 +761,9 @@ export function MapCanvas() {
         <WorkflowStepper />
         <div className="top-bar-row">
           {/* LEFT: Primary actions */}
+          <button className="top-bar-btn" onClick={() => setShowNewProject(true)} aria-label="New project">
+            + New
+          </button>
           <button className="compute-btn" onClick={() => solve()} disabled={isSolving} aria-label="Compute hydraulic analysis">
             {isSolving ? '⏳ Solving…' : '▶ Compute'}
           </button>
@@ -1031,7 +1037,8 @@ export function MapCanvas() {
       {/* Shortcut overlay */}
       {showShortcuts && <ShortcutOverlay onClose={() => setShowShortcuts(false)} />}
 
-      {showCommandPalette && <CommandPalette onClose={() => setShowCommandPalette(false)} />}
+      {showCommandPalette && <CommandPalette onClose={() => setShowCommandPalette(false)} onNewProject={() => setShowNewProject(true)} />}
+      {showNewProject && <NewProjectDialog mapRef={mapRef} onClose={() => setShowNewProject(false)} />}
     </div>
   );
 }
