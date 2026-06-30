@@ -2,7 +2,7 @@
  * EPANET engine wrapper — the single interface between the UI and the solver.
  * All hydraulic results come from the epanet-js toolkit (MIT-licensed OWA-EPANET 2.2 WASM).
  */
-import { Workspace, Project, NodeProperty, LinkProperty, InitHydOption } from 'epanet-js';
+import { Workspace, Project, NodeProperty, LinkProperty, InitHydOption, CountType } from 'epanet-js';
 
 export interface SteadyStateResult {
   nodeResults: Map<string, { pressure: number; head: number; demand: number }>;
@@ -37,7 +37,7 @@ export async function solveSteadyState(inp: string): Promise<SteadyStateResult> 
   const linkResults = new Map<string, { flow: number; velocity: number; headloss: number }>();
 
   // Read node results
-  const nodeCount = project.getCount(0); // CountType.Node = 0
+  const nodeCount = project.getCount(CountType.NodeCount);
   for (let i = 1; i <= nodeCount; i++) {
     const id = project.getNodeId(i);
     nodeResults.set(id, {
@@ -48,7 +48,7 @@ export async function solveSteadyState(inp: string): Promise<SteadyStateResult> 
   }
 
   // Read link results
-  const linkCount = project.getCount(1); // CountType.Link = 1
+  const linkCount = project.getCount(CountType.LinkCount);
   for (let i = 1; i <= linkCount; i++) {
     const id = project.getLinkId(i);
     linkResults.set(id, {
@@ -84,8 +84,8 @@ export async function solveEPS(inp: string): Promise<EPSResults> {
   const nodeResults = new Map<number, Map<string, { pressure: number; head: number; demand: number }>>();
   const linkResults = new Map<number, Map<string, { flow: number; velocity: number; headloss: number }>>();
 
-  const nodeCount = project.getCount(0);
-  const linkCount = project.getCount(1);
+  const nodeCount = project.getCount(CountType.NodeCount);
+  const linkCount = project.getCount(CountType.LinkCount);
 
   project.openH();
   project.initH(InitHydOption.SaveAndInit);
@@ -128,4 +128,4 @@ export async function solveEPS(inp: string): Promise<EPSResults> {
   return { timestamps, nodeResults, linkResults };
 }
 
-export { NodeProperty, LinkProperty, InitHydOption };
+export { NodeProperty, LinkProperty, InitHydOption, CountType };
