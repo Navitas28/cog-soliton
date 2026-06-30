@@ -79,6 +79,8 @@ export function MapCanvas() {
   const [showCost, setShowCost] = useState(false);
   const [showOptimizer, setShowOptimizer] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const toggleDropdown = (name: string) => setOpenDropdown(prev => prev === name ? null : name);
 
   // Result helpers
   const getNodeResult = useCallback((nodeId: string): NodeResult | undefined => {
@@ -707,9 +709,10 @@ export function MapCanvas() {
 
   return (
     <div className="map-container">
-      {/* Top bar — two rows */}
+      {/* Top bar — grouped with progressive disclosure */}
       <div className="top-bar">
         <div className="top-bar-row">
+          {/* LEFT: Primary actions */}
           <button className="compute-btn" onClick={() => solve()} disabled={isSolving}>
             {isSolving ? '⏳ Solving…' : '▶ Compute'}
           </button>
@@ -717,36 +720,29 @@ export function MapCanvas() {
 
           <div className="top-bar-separator" />
 
-          <button className="top-bar-btn" onClick={() => setShowScenarioPanel(!showScenarioPanel)}
-            data-active={showScenarioPanel || undefined}>
-            ⚙ Scenario
-          </button>
-
-          {hasResults && (
-            <button className="top-bar-btn" onClick={() => setShowResultsDashboard(!showResultsDashboard)}
-              data-active={showResultsDashboard || undefined}>
-              📊 Results
+          {/* Settings dropdown */}
+          <div className="top-bar-dropdown">
+            <button className="top-bar-btn" onClick={() => toggleDropdown('settings')}
+              data-active={openDropdown === 'settings' || showScenarioPanel || undefined}>
+              ⚙ Settings {openDropdown === 'settings' ? '▴' : '▾'}
             </button>
-          )}
+            {openDropdown === 'settings' && (
+              <>
+                <div className="top-bar-dropdown-backdrop" onClick={() => setOpenDropdown(null)} />
+                <div className="top-bar-dropdown-menu">
+                  <button className="top-bar-dropdown-item"
+                    data-active={showScenarioPanel || undefined}
+                    onClick={() => { setShowScenarioPanel(!showScenarioPanel); setOpenDropdown(null); }}>
+                    ⚙ Scenario Panel
+                  </button>
+                  <ScadaIndicator />
+                </div>
+              </>
+            )}
+          </div>
 
-          {hasResults && (
-            <button className="top-bar-btn top-bar-btn--twin" onClick={() => useNetworkStore.getState().setActiveView('twin')}>
-              🌐 Digital Twin
-            </button>
-          )}
-
-          <button className="top-bar-btn" onClick={() => setShowCost(!showCost)}
-            data-active={showCost || undefined}>
-            💰 Cost
-          </button>
-          <button className="top-bar-btn" onClick={() => setShowOptimizer(true)}>
-            ⚡ Optimize
-          </button>
-          <button className="top-bar-btn" onClick={() => setShowComparison(true)}>
-            📊 Compare
-          </button>
-
-          {/* Status badge inline */}
+          {/* CENTER: Status badge */}
+          <div className="top-bar-spacer" />
           {hasResults && pressureStats && velocityStats && (
             <span className={`status-badge-inline ${badgeClass}`}>
               P: {pressureStats.passing}/{pressureStats.total} ({compliancePct.toFixed(0)}%)
@@ -756,17 +752,18 @@ export function MapCanvas() {
               {model.options.duration > 0 ? 'EPS' : 'SS'}
             </span>
           )}
-
+          {epsResult && (
+            <>
+              <span className="eps-time-badge" style={{ marginLeft: 6 }}>
+                {formatTime(epsResult.timestamps[epsTimeIndex])}
+              </span>
+              <input type="range" className="eps-time-slider" min={0} max={epsResult.timestamps.length - 1}
+                value={epsTimeIndex} onChange={e => setEpsTimeIndex(parseInt(e.target.value))} />
+            </>
+          )}
           <div className="top-bar-spacer" />
 
-          <button
-            className={`top-bar-btn ${isSatellite ? 'top-bar-btn--satellite-active' : ''}`}
-            onClick={() => setIsSatellite(!isSatellite)}
-            title={isSatellite ? 'Street view' : 'Satellite view'}
-          >
-            🛰 {isSatellite ? 'Street' : 'Satellite'}
-          </button>
-          <ExportPanel />
+          {/* RIGHT: Search, Analysis, View, Export */}
           {showSearch ? (
             <SearchBox mapRef={mapRef} onClose={() => setShowSearch(false)} />
           ) : (
@@ -774,18 +771,75 @@ export function MapCanvas() {
               🔍
             </button>
           )}
-          <ScadaIndicator />
 
-          {epsResult && (
-            <>
-              <div className="top-bar-separator" />
-              <span className="eps-time-badge">
-                {formatTime(epsResult.timestamps[epsTimeIndex])}
-              </span>
-              <input type="range" className="eps-time-slider" min={0} max={epsResult.timestamps.length - 1}
-                value={epsTimeIndex} onChange={e => setEpsTimeIndex(parseInt(e.target.value))} />
-            </>
-          )}
+          {/* Analysis dropdown */}
+          <div className="top-bar-dropdown">
+            <button className="top-bar-btn" onClick={() => toggleDropdown('analysis')}
+              data-active={openDropdown === 'analysis' || showResultsDashboard || showCost || undefined}>
+              Analysis {openDropdown === 'analysis' ? '▴' : '▾'}
+            </button>
+            {openDropdown === 'analysis' && (
+              <>
+                <div className="top-bar-dropdown-backdrop" onClick={() => setOpenDropdown(null)} />
+                <div className="top-bar-dropdown-menu">
+                  <button className="top-bar-dropdown-item"
+                    data-active={showResultsDashboard || undefined}
+                    onClick={() => { setShowResultsDashboard(!showResultsDashboard); setOpenDropdown(null); }}>
+                    📊 Results Dashboard
+                  </button>
+                  <button className="top-bar-dropdown-item"
+                    data-active={showCost || undefined}
+                    onClick={() => { setShowCost(!showCost); setOpenDropdown(null); }}>
+                    💰 Cost Estimate
+                  </button>
+                  <div className="top-bar-dropdown-divider" />
+                  <button className="top-bar-dropdown-item"
+                    onClick={() => { setShowOptimizer(true); setOpenDropdown(null); }}>
+                    ⚡ Optimize Pipes
+                  </button>
+                  <button className="top-bar-dropdown-item"
+                    onClick={() => { setShowComparison(true); setOpenDropdown(null); }}>
+                    📊 Compare Scenarios
+                  </button>
+                  {hasResults && (
+                    <>
+                      <div className="top-bar-dropdown-divider" />
+                      <button className="top-bar-dropdown-item"
+                        onClick={() => { useNetworkStore.getState().setActiveView('twin'); setOpenDropdown(null); }}>
+                        🌐 Digital Twin
+                      </button>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* View dropdown */}
+          <div className="top-bar-dropdown">
+            <button className="top-bar-btn" onClick={() => toggleDropdown('view')}>
+              View {openDropdown === 'view' ? '▴' : '▾'}
+            </button>
+            {openDropdown === 'view' && (
+              <>
+                <div className="top-bar-dropdown-backdrop" onClick={() => setOpenDropdown(null)} />
+                <div className="top-bar-dropdown-menu">
+                  <button className="top-bar-dropdown-item"
+                    data-active={isSatellite || undefined}
+                    onClick={() => { setIsSatellite(!isSatellite); setOpenDropdown(null); }}>
+                    🛰 {isSatellite ? 'Switch to Street' : 'Switch to Satellite'}
+                  </button>
+                  <button className="top-bar-dropdown-item"
+                    data-active={showInp || undefined}
+                    onClick={() => { setShowInp(!showInp); setOpenDropdown(null); }}>
+                    📄 INP Viewer
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+          <ExportPanel />
         </div>
       </div>
 
