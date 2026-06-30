@@ -654,7 +654,7 @@ html, body, #root {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  width: 280px;
+  width: 320px;
   background: #fff;
   border: 1px solid #ddd;
   border-radius: 6px;
@@ -665,31 +665,36 @@ html, body, #root {
 
 .demo-city-tabs {
   display: flex;
-  padding: 6px 6px 0;
-  gap: 2px;
+  padding: 8px 8px 0;
+  gap: 4px;
+  border-bottom: 2px solid #f0f2f5;
 }
 
 .demo-city-tab {
   flex: 1;
-  padding: 8px;
+  padding: 8px 4px;
   border: none;
-  border-radius: 6px 6px 0 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
   background: transparent;
-  color: #888;
-  font-size: 12px;
+  color: #999;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.1s;
+  transition: all 0.15s;
+  text-align: center;
+  margin-bottom: -2px;
 }
 
 .demo-city-tab:hover {
-  background: #f0f2f5;
-  color: #333;
+  color: #3a5fcf;
+  border-bottom-color: rgba(58, 95, 207, 0.3);
 }
 
 .demo-city-tab.active {
-  background: #3a5fcf;
-  color: #fff;
+  color: #3a5fcf;
+  border-bottom-color: #3a5fcf;
+  background: transparent;
 }
 
 .demo-loader-header {
