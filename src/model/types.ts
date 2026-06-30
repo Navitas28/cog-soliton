@@ -44,6 +44,7 @@ export interface Pipe {
   roughness: number;   // Hazen-Williams C coefficient
   minorLoss: number;   // minor loss coefficient
   status: PipeStatus;
+  vertices?: [number, number][]; // intermediate bend points [x(lng), y(lat)]
 }
 
 export interface Pump {

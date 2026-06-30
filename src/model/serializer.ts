@@ -148,8 +148,20 @@ export function serializeToInp(model: NetworkModel): string {
   }
   push('');
 
+  // [VERTICES] — pipe bend points
+  push('[VERTICES]');
+  push(';Link            X-Coord            Y-Coord');
+  for (const pipe of model.pipes) {
+    if (pipe.vertices && pipe.vertices.length > 0) {
+      for (const [vx, vy] of pipe.vertices) {
+        push(` ${pad(pipe.id, 16)}${pad(fmtNum(vx, 4), 20)}${fmtNum(vy, 4)}`);
+      }
+    }
+  }
+  push('');
+
   // Empty sections required by EPANET
-  for (const section of ['[VERTICES]', '[LABELS]', '[BACKDROP]', '[EMITTERS]', '[QUALITY]', '[SOURCES]', '[REACTIONS]', '[MIXING]', '[CONTROLS]', '[RULES]']) {
+  for (const section of ['[LABELS]', '[BACKDROP]', '[EMITTERS]', '[QUALITY]', '[SOURCES]', '[REACTIONS]', '[MIXING]', '[CONTROLS]', '[RULES]']) {
     push(section);
     push('');
   }
