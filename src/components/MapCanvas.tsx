@@ -4,6 +4,7 @@
  */
 import { useRef, useEffect, useCallback, useState } from 'react';
 import { useNetworkStore } from '../store/networkStore';
+import { DemoLoader } from './DemoLoader';
 import type { NodeResult, LinkResult } from '../engine/engine';
 
 interface ViewTransform { offsetX: number; offsetY: number; scale: number }
@@ -44,6 +45,32 @@ export function MapCanvas() {
   const setEpsTimeIndex = useNetworkStore(s => s.setEpsTimeIndex);
 
   const [showInp, setShowInp] = useState(false);
+  const [lastModelTitle, setLastModelTitle] = useState('');
+
+  // Auto-fit to network extent when model changes (e.g. demo load)
+  useEffect(() => {
+    if (model.title === lastModelTitle) return;
+    setLastModelTitle(model.title);
+    const allNodes = [...model.junctions, ...model.reservoirs, ...model.tanks];
+    if (allNodes.length < 2) return;
+    const xs = allNodes.map(n => n.x);
+    const ys = allNodes.map(n => n.y);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const rangeX = maxX - minX || 1;
+    const rangeY = maxY - minY || 1;
+    const padding = 80;
+    const scaleX = (size.w - padding * 2) / rangeX;
+    const scaleY = (size.h - padding * 2) / rangeY;
+    const scale = Math.min(scaleX, scaleY);
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    setView({
+      scale,
+      offsetX: size.w / 2 - cx * scale,
+      offsetY: size.h / 2 - cy * scale,
+    });
+  }, [model.title, model.junctions.length, model.reservoirs.length, model.tanks.length, size]);
 
   // Get current timestep results
   const getNodeResult = useCallback((nodeId: string): NodeResult | undefined => {
@@ -286,6 +313,8 @@ export function MapCanvas() {
         <button className="compute-btn" onClick={() => solve()} disabled={isSolving}>
           {isSolving ? '⏳ Solving…' : '▶ Compute'}
         </button>
+
+        <DemoLoader />
 
         <button onClick={() => setShowScenarioPanel(!showScenarioPanel)}
           style={{ padding: '6px 12px', border: '1px solid #3a5fcf', borderRadius: 4, background: showScenarioPanel ? '#3a5fcf' : '#fff', color: showScenarioPanel ? '#fff' : '#3a5fcf', cursor: 'pointer', fontSize: 12 }}>
