@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:epanetjs.com)",
+      "WebSearch",
+      "WebFetch(domain:toolkit.epanetjs.com)",
+      "Bash(npm create:*)",
+      "Bash(npx:*)",
+      "Bash(cp -r soliton-tmp/* .)",
+      "Bash(cp soliton-tmp/.gitignore .)",
+      "Bash(rm -rf soliton-tmp)",
+      "Bash(npm install:*)",
+      "Bash(curl -s http://localhost:5173/)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}
