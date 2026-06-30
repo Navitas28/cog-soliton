@@ -122,8 +122,8 @@ export function MapCanvas() {
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
       style: offlineBlankStyle(),
-      center: [82.1998, 26.7922], // Ayodhya
-      zoom: 14,
+      center: [82.00, 26.85], // India — will fitBounds when network loads
+      zoom: 5,
       attributionControl: false,
     });
 
@@ -133,25 +133,30 @@ export function MapCanvas() {
       // Ayodhya outline layers
       map.addSource(SRC_OUTLINE, { type: 'geojson', data: AYODHYA_OUTLINE });
 
+      // Ayodhya outline layers — hidden by default, shown when Ayodhya demo loaded
       map.addLayer({
         id: 'outline-fill', type: 'fill', source: SRC_OUTLINE,
         filter: ['==', ['get', 'type'], 'boundary'],
         paint: { 'fill-color': '#e8edf5', 'fill-opacity': 0.4 },
+        layout: { visibility: 'none' },
       });
       map.addLayer({
         id: 'outline-border', type: 'line', source: SRC_OUTLINE,
         filter: ['==', ['get', 'type'], 'boundary'],
         paint: { 'line-color': '#99aacc', 'line-width': 1.5, 'line-dasharray': [4, 2] },
+        layout: { visibility: 'none' },
       });
       map.addLayer({
         id: 'outline-river', type: 'line', source: SRC_OUTLINE,
         filter: ['==', ['get', 'type'], 'river'],
         paint: { 'line-color': '#5dade2', 'line-width': 3, 'line-opacity': 0.7 },
+        layout: { visibility: 'none' },
       });
       map.addLayer({
         id: 'outline-roads', type: 'line', source: SRC_OUTLINE,
         filter: ['==', ['get', 'type'], 'road'],
         paint: { 'line-color': '#cccccc', 'line-width': 1 },
+        layout: { visibility: 'none' },
       });
 
       // Network sources (empty initially)
@@ -295,10 +300,20 @@ export function MapCanvas() {
     if (labelSrc) labelSrc.setData(buildLabelFeatures(model, getLinkResult));
   }, [model, selectedId, pipeDrawingFrom, mapReady, getNodeResult, getLinkResult, solveResult, epsResult, epsTimeIndex]);
 
-  // --- Fit to network on model load ---
+  // --- Fit to network on model load + toggle Ayodhya overlay ---
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
+
+    // Show Ayodhya outline only when Ayodhya model is loaded
+    const isAyodhya = model.title.toLowerCase().includes('ayodhya');
+    const outlineLayers = ['outline-fill', 'outline-border', 'outline-river', 'outline-roads'];
+    for (const layerId of outlineLayers) {
+      if (map.getLayer(layerId)) {
+        map.setLayoutProperty(layerId, 'visibility', isAyodhya ? 'visible' : 'none');
+      }
+    }
+
     const allNodes = [...model.junctions, ...model.reservoirs, ...model.tanks];
     if (allNodes.length < 2) return;
 
