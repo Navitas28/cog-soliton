@@ -303,6 +303,17 @@ All four demo city networks are **synthetic but plausible** models built from pu
 - Intentionally deficient: far south-east periphery (F1-F3) — long runs, small pipes
 - 3 scenarios: full 11-ward, 4 selected DMAs, Saryu source Phase 1
 
+| Data Type | Source |
+|-----------|--------|
+| City boundary & roads | OpenStreetMap + Census 2011 |
+| WTP/source location | AMRUT 2.0 DPRs (public filing), Saryu River |
+| ESR/OHT positions | UP Jal Nigam project reports, AMRUT 2.0 DPRs |
+| Zone names & wards | Ayodhya Nagar Nigam ward maps (public) |
+| Elevation data | SRTM 30m DEM (USGS) — 93–100m realistic for Gangetic Plain |
+| Demand norms | CPHEEO 2024 (135 LPCD for Class I cities) |
+| Pipe costs | UP State SOR 2024 |
+| Design criteria | CPHEEO 2024 + AMRUT 2.0 guidelines |
+
 **Bhubaneswar (WATCO, AMRUT 2.0)**
 - Source: Kuakhai River, Palasuni WTP (130 MLD)
 - Tanks: ESR1 (Saheed Nagar commercial), ESR2 (Old Town/Lingaraj)
