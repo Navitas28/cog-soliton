@@ -1,37 +1,40 @@
 /**
- * Interactive network canvas with pan/zoom, keyboard shortcuts, node drag,
- * and pump/valve rendering.
+ * Interactive network map using MapLibre GL.
+ * Network elements rendered as GeoJSON layers. Ayodhya outline as basemap overlay.
  */
 import { useRef, useEffect, useCallback, useState } from 'react';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { useNetworkStore } from '../store/networkStore';
 import { DemoLoader } from './DemoLoader';
 import { ExportPanel } from './ExportPanel';
+import { buildNodeFeatures, buildLinkFeatures, buildLabelFeatures, offlineBlankStyle } from './mapHelpers';
+import { AYODHYA_OUTLINE } from '../data/ayodhyaOutline';
 import type { NodeResult, LinkResult } from '../engine/engine';
 import type { DrawingTool } from '../store/networkStore';
 
-interface ViewTransform { offsetX: number; offsetY: number; scale: number }
-
-const NODE_RADIUS = 8;
-const HIT_RADIUS = 12;
-
-// Keyboard shortcut map (lowercase key → tool)
 const KEY_TO_TOOL: Record<string, DrawingTool> = {
   s: 'select', r: 'reservoir', j: 'junction', t: 'tank', p: 'pipe', u: 'pump', v: 'valve',
 };
 
+// Source/layer IDs
+const SRC_NODES = 'network-nodes';
+const SRC_LINKS = 'network-links';
+const SRC_LABELS = 'network-labels';
+const SRC_OUTLINE = 'ayodhya-outline';
+
+const EMPTY_FC: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
+
 export function MapCanvas() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [view, setView] = useState<ViewTransform>({ offsetX: 400, offsetY: 300, scale: 1 });
-  const [isPanning, setIsPanning] = useState(false);
-  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
-  const [size, setSize] = useState({ w: 800, h: 600 });
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  const [mapReady, setMapReady] = useState(false);
 
   // Drag state
-  const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
+  const draggingNodeIdRef = useRef<string | null>(null);
   const didDragRef = useRef(false);
-  const dragStartRef = useRef({ x: 0, y: 0 });
 
+  // Store selectors
   const model = useNetworkStore(s => s.model);
   const activeTool = useNetworkStore(s => s.activeTool);
   const selectedId = useNetworkStore(s => s.selectedElementId);
@@ -63,78 +66,6 @@ export function MapCanvas() {
   const setEpsTimeIndex = useNetworkStore(s => s.setEpsTimeIndex);
 
   const [showInp, setShowInp] = useState(false);
-  const [lastModelTitle, setLastModelTitle] = useState('');
-
-  // --- Keyboard shortcuts ---
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      // Skip when typing in input fields
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
-
-      const key = e.key.toLowerCase();
-
-      // Tool shortcuts
-      if (KEY_TO_TOOL[key]) {
-        e.preventDefault();
-        setActiveTool(KEY_TO_TOOL[key]);
-        return;
-      }
-
-      // Delete selected element
-      if ((key === 'delete' || key === 'backspace') && selectedId && selectedType) {
-        e.preventDefault();
-        deleteElement(selectedId, selectedType);
-        return;
-      }
-
-      // Escape — deselect + cancel pipe drawing
-      if (key === 'escape') {
-        selectElement(null, null);
-        setPipeDrawingFrom(null);
-        return;
-      }
-
-      // Undo: Ctrl+Z / Cmd+Z
-      if (key === 'z' && (e.ctrlKey || e.metaKey) && !e.shiftKey) {
-        e.preventDefault();
-        (useNetworkStore as any).temporal.getState().undo();
-        return;
-      }
-
-      // Redo: Ctrl+Shift+Z / Cmd+Shift+Z or Ctrl+Y
-      if ((key === 'z' && (e.ctrlKey || e.metaKey) && e.shiftKey) ||
-          (key === 'y' && (e.ctrlKey || e.metaKey))) {
-        e.preventDefault();
-        (useNetworkStore as any).temporal.getState().redo();
-        return;
-      }
-    };
-
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [selectedId, selectedType, setActiveTool, deleteElement, selectElement, setPipeDrawingFrom]);
-
-  // Auto-fit to network extent when model changes
-  useEffect(() => {
-    if (model.title === lastModelTitle) return;
-    setLastModelTitle(model.title);
-    const allNodes = [...model.junctions, ...model.reservoirs, ...model.tanks];
-    if (allNodes.length < 2) return;
-    const xs = allNodes.map(n => n.x);
-    const ys = allNodes.map(n => n.y);
-    const minX = Math.min(...xs), maxX = Math.max(...xs);
-    const minY = Math.min(...ys), maxY = Math.max(...ys);
-    const rangeX = maxX - minX || 1;
-    const rangeY = maxY - minY || 1;
-    const padding = 80;
-    const scaleX = (size.w - padding * 2) / rangeX;
-    const scaleY = (size.h - padding * 2) / rangeY;
-    const scale = Math.min(scaleX, scaleY);
-    const cx = (minX + maxX) / 2;
-    const cy = (minY + maxY) / 2;
-    setView({ scale, offsetX: size.w / 2 - cx * scale, offsetY: size.h / 2 - cy * scale });
-  }, [model.title, model.junctions.length, model.reservoirs.length, model.tanks.length, size]);
 
   // Result helpers
   const getNodeResult = useCallback((nodeId: string): NodeResult | undefined => {
@@ -157,388 +88,352 @@ export function MapCanvas() {
 
   const hasResults = !!(solveResult || epsResult);
 
-  // Resize observer
+  // --- Keyboard shortcuts ---
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    const ro = new ResizeObserver(entries => {
-      const { width, height } = entries[0].contentRect;
-      setSize({ w: width, h: height });
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+
+      const key = e.key.toLowerCase();
+
+      if (KEY_TO_TOOL[key]) { e.preventDefault(); setActiveTool(KEY_TO_TOOL[key]); return; }
+
+      if ((key === 'delete' || key === 'backspace') && selectedId && selectedType) {
+        e.preventDefault(); deleteElement(selectedId, selectedType); return;
+      }
+
+      if (key === 'escape') { selectElement(null, null); setPipeDrawingFrom(null); return; }
+
+      if (key === 'z' && (e.ctrlKey || e.metaKey) && !e.shiftKey) {
+        e.preventDefault(); (useNetworkStore as any).temporal.getState().undo(); return;
+      }
+      if ((key === 'z' && (e.ctrlKey || e.metaKey) && e.shiftKey) || (key === 'y' && (e.ctrlKey || e.metaKey))) {
+        e.preventDefault(); (useNetworkStore as any).temporal.getState().redo(); return;
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [selectedId, selectedType, setActiveTool, deleteElement, selectElement, setPipeDrawingFrom]);
+
+  // --- Initialize MapLibre ---
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current) return;
+
+    const map = new maplibregl.Map({
+      container: mapContainerRef.current,
+      style: offlineBlankStyle(),
+      center: [82.1998, 26.7922], // Ayodhya
+      zoom: 14,
+      attributionControl: false,
     });
-    ro.observe(container);
-    return () => ro.disconnect();
+
+    map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+
+    map.on('load', () => {
+      // Ayodhya outline layers
+      map.addSource(SRC_OUTLINE, { type: 'geojson', data: AYODHYA_OUTLINE });
+
+      map.addLayer({
+        id: 'outline-fill', type: 'fill', source: SRC_OUTLINE,
+        filter: ['==', ['get', 'type'], 'boundary'],
+        paint: { 'fill-color': '#e8edf5', 'fill-opacity': 0.4 },
+      });
+      map.addLayer({
+        id: 'outline-border', type: 'line', source: SRC_OUTLINE,
+        filter: ['==', ['get', 'type'], 'boundary'],
+        paint: { 'line-color': '#99aacc', 'line-width': 1.5, 'line-dasharray': [4, 2] },
+      });
+      map.addLayer({
+        id: 'outline-river', type: 'line', source: SRC_OUTLINE,
+        filter: ['==', ['get', 'type'], 'river'],
+        paint: { 'line-color': '#5dade2', 'line-width': 3, 'line-opacity': 0.7 },
+      });
+      map.addLayer({
+        id: 'outline-roads', type: 'line', source: SRC_OUTLINE,
+        filter: ['==', ['get', 'type'], 'road'],
+        paint: { 'line-color': '#cccccc', 'line-width': 1 },
+      });
+
+      // Network sources (empty initially)
+      map.addSource(SRC_LINKS, { type: 'geojson', data: EMPTY_FC });
+      map.addSource(SRC_NODES, { type: 'geojson', data: EMPTY_FC });
+      map.addSource(SRC_LABELS, { type: 'geojson', data: EMPTY_FC });
+
+      // Link layers
+      map.addLayer({
+        id: 'links-line', type: 'line', source: SRC_LINKS,
+        paint: {
+          'line-color': [
+            'case',
+            ['==', ['get', 'velocityStatus'], 'optimal'], '#2ecc71',
+            ['==', ['get', 'velocityStatus'], 'ok'], '#f39c12',
+            ['==', ['get', 'velocityStatus'], 'fail'], '#e74c3c',
+            ['==', ['get', 'type'], 'pump'], '#e67e22',
+            ['==', ['get', 'type'], 'valve'], '#9b59b6',
+            ['boolean', ['get', 'closed'], false], '#999999',
+            '#3498db',
+          ],
+          'line-width': ['case', ['boolean', ['get', 'selected'], false], 5, 3],
+          'line-dasharray': ['case', ['boolean', ['get', 'closed'], false], ['literal', [4, 2]], ['literal', [1, 0]]],
+        },
+      });
+
+      // Pump/valve icons at midpoints (via labels source)
+      map.addLayer({
+        id: 'labels-bg', type: 'circle', source: SRC_LABELS,
+        paint: {
+          'circle-radius': 0,
+          'circle-color': 'transparent',
+        },
+      });
+
+      // Link labels
+      map.addLayer({
+        id: 'link-labels', type: 'symbol', source: SRC_LABELS,
+        layout: {
+          'text-field': ['concat', ['get', 'label'], '\n', ['get', 'flowLabel']],
+          'text-size': 10,
+          'text-offset': [0, -1],
+          'text-allow-overlap': true,
+        },
+        paint: { 'text-color': '#555', 'text-halo-color': '#fff', 'text-halo-width': 1.5 },
+      });
+
+      // Node layers — different shapes via circle
+      map.addLayer({
+        id: 'nodes-circle', type: 'circle', source: SRC_NODES,
+        paint: {
+          'circle-radius': [
+            'case',
+            ['any', ['boolean', ['get', 'selected'], false], ['boolean', ['get', 'highlighted'], false], ['boolean', ['get', 'dragging'], false]], 10,
+            8,
+          ],
+          'circle-color': [
+            'case',
+            ['==', ['get', 'type'], 'reservoir'], '#2980b9',
+            ['==', ['get', 'type'], 'tank'], '#8e44ad',
+            // Junctions: color by result
+            ['all', ['boolean', ['get', 'hasResult'], false], ['boolean', ['get', 'passesPressure'], false]], '#2ecc71',
+            ['boolean', ['get', 'hasResult'], false], '#e74c3c',
+            '#34495e',
+          ],
+          'circle-stroke-width': [
+            'case',
+            ['boolean', ['get', 'selected'], false], 3,
+            ['boolean', ['get', 'highlighted'], false], 3,
+            ['boolean', ['get', 'dragging'], false], 3,
+            0,
+          ],
+          'circle-stroke-color': [
+            'case',
+            ['boolean', ['get', 'dragging'], false], '#e67e22',
+            ['boolean', ['get', 'highlighted'], false], '#f39c12',
+            '#3a5fcf',
+          ],
+        },
+      });
+
+      // Node labels
+      map.addLayer({
+        id: 'node-labels', type: 'symbol', source: SRC_NODES,
+        layout: {
+          'text-field': ['get', 'id'],
+          'text-size': 11,
+          'text-offset': [0, -1.5],
+          'text-allow-overlap': true,
+          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+        },
+        paint: { 'text-color': '#333', 'text-halo-color': '#fff', 'text-halo-width': 1.5 },
+      });
+
+      // Pressure labels for junctions with results
+      map.addLayer({
+        id: 'pressure-labels', type: 'symbol', source: SRC_NODES,
+        filter: ['all', ['==', ['get', 'type'], 'junction'], ['boolean', ['get', 'hasResult'], false]],
+        layout: {
+          'text-field': ['concat', ['to-string', ['round', ['get', 'pressure']]], 'm'],
+          'text-size': 10,
+          'text-offset': [0, 1.5],
+          'text-allow-overlap': true,
+        },
+        paint: {
+          'text-color': ['case', ['boolean', ['get', 'passesPressure'], false], '#155724', '#721c24'],
+          'text-halo-color': '#fff',
+          'text-halo-width': 1,
+        },
+      });
+
+      setMapReady(true);
+    });
+
+    mapRef.current = map;
+
+    return () => { map.remove(); mapRef.current = null; setMapReady(false); };
   }, []);
 
-  const toScreen = useCallback((x: number, y: number) => ({
-    sx: x * view.scale + view.offsetX,
-    sy: y * view.scale + view.offsetY,
-  }), [view]);
+  // --- Update GeoJSON sources when model/results/selection changes ---
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
 
-  const toWorld = useCallback((sx: number, sy: number) => ({
-    x: (sx - view.offsetX) / view.scale,
-    y: (sy - view.offsetY) / view.scale,
-  }), [view]);
+    const nodeSrc = map.getSource(SRC_NODES) as maplibregl.GeoJSONSource;
+    const linkSrc = map.getSource(SRC_LINKS) as maplibregl.GeoJSONSource;
+    const labelSrc = map.getSource(SRC_LABELS) as maplibregl.GeoJSONSource;
 
-  // Hit testing
-  const findNodeAt = useCallback((sx: number, sy: number): { id: string; type: 'junction' | 'reservoir' | 'tank' } | null => {
-    for (const j of model.junctions) {
-      const s = toScreen(j.x, j.y);
-      if (Math.hypot(s.sx - sx, s.sy - sy) < HIT_RADIUS) return { id: j.id, type: 'junction' };
-    }
-    for (const r of model.reservoirs) {
-      const s = toScreen(r.x, r.y);
-      if (Math.hypot(s.sx - sx, s.sy - sy) < HIT_RADIUS) return { id: r.id, type: 'reservoir' };
-    }
-    for (const t of model.tanks) {
-      const s = toScreen(t.x, t.y);
-      if (Math.hypot(s.sx - sx, s.sy - sy) < HIT_RADIUS) return { id: t.id, type: 'tank' };
-    }
-    return null;
-  }, [model, toScreen]);
+    if (nodeSrc) nodeSrc.setData(buildNodeFeatures(model, getNodeResult, selectedId, pipeDrawingFrom, draggingNodeIdRef.current));
+    if (linkSrc) linkSrc.setData(buildLinkFeatures(model, getLinkResult, selectedId));
+    if (labelSrc) labelSrc.setData(buildLabelFeatures(model, getLinkResult));
+  }, [model, selectedId, pipeDrawingFrom, mapReady, getNodeResult, getLinkResult, solveResult, epsResult, epsTimeIndex]);
 
-  // Hit test for all links (pipes, pumps, valves)
-  const findLinkAt = useCallback((sx: number, sy: number): { id: string; type: 'pipe' | 'pump' | 'valve' } | null => {
+  // --- Fit to network on model load ---
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
     const allNodes = [...model.junctions, ...model.reservoirs, ...model.tanks];
-    const nodeMap = new Map(allNodes.map(n => [n.id, n]));
+    if (allNodes.length < 2) return;
 
-    const testLinks = [
-      ...model.pipes.map(l => ({ id: l.id, from: l.fromNode, to: l.toNode, type: 'pipe' as const })),
-      ...model.pumps.map(l => ({ id: l.id, from: l.fromNode, to: l.toNode, type: 'pump' as const })),
-      ...model.valves.map(l => ({ id: l.id, from: l.fromNode, to: l.toNode, type: 'valve' as const })),
-    ];
+    const bounds = new maplibregl.LngLatBounds();
+    for (const n of allNodes) bounds.extend([n.x, n.y]);
+    map.fitBounds(bounds, { padding: 60, maxZoom: 16 });
+  }, [model.title, mapReady]);
 
-    for (const link of testLinks) {
-      const fromNode = nodeMap.get(link.from);
-      const toNode = nodeMap.get(link.to);
-      if (!fromNode || !toNode) continue;
-      const a = toScreen(fromNode.x, fromNode.y);
-      const b = toScreen(toNode.x, toNode.y);
-      if (pointToSegmentDist(sx, sy, a.sx, a.sy, b.sx, b.sy) < 8) return { id: link.id, type: link.type };
-    }
-    return null;
-  }, [model, toScreen]);
-
-  // Click handler
-  const handleClick = useCallback((e: React.MouseEvent) => {
-    // Suppress click after drag
-    if (didDragRef.current) { didDragRef.current = false; return; }
-
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const sx = e.clientX - rect.left;
-    const sy = e.clientY - rect.top;
-    const world = toWorld(sx, sy);
-
-    if (activeTool === 'junction') {
-      selectElement(addJunction(world.x, world.y), 'junction');
-    } else if (activeTool === 'reservoir') {
-      selectElement(addReservoir(world.x, world.y), 'reservoir');
-    } else if (activeTool === 'tank') {
-      selectElement(addTank(world.x, world.y), 'tank');
-    } else if (activeTool === 'pipe' || activeTool === 'pump' || activeTool === 'valve') {
-      // Two-click link drawing (shared for pipe, pump, valve)
-      const hit = findNodeAt(sx, sy);
-      if (!hit) return;
-      if (!pipeDrawingFrom) {
-        setPipeDrawingFrom(hit.id);
-      } else if (hit.id !== pipeDrawingFrom) {
-        let id: string;
-        let type: 'pipe' | 'pump' | 'valve';
-        if (activeTool === 'pump') {
-          id = addPump(pipeDrawingFrom, hit.id);
-          type = 'pump';
-        } else if (activeTool === 'valve') {
-          id = addValve(pipeDrawingFrom, hit.id);
-          type = 'valve';
-        } else {
-          id = addPipe(pipeDrawingFrom, hit.id);
-          type = 'pipe';
-        }
-        selectElement(id, type);
-        setPipeDrawingFrom(null);
-      }
-    } else if (activeTool === 'select') {
-      const nodeHit = findNodeAt(sx, sy);
-      if (nodeHit) { selectElement(nodeHit.id, nodeHit.type); return; }
-      const linkHit = findLinkAt(sx, sy);
-      if (linkHit) { selectElement(linkHit.id, linkHit.type); return; }
-      selectElement(null, null);
-    }
-  }, [activeTool, toWorld, findNodeAt, findLinkAt, pipeDrawingFrom, addJunction, addReservoir, addTank, addPipe, addPump, addValve, selectElement, setPipeDrawingFrom]);
-
-  // Mouse handlers — pan + node drag
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    // Pan: middle-click or alt+left-click
-    if (e.button === 1 || (e.button === 0 && e.altKey)) {
-      setIsPanning(true);
-      setPanStart({ x: e.clientX, y: e.clientY });
-      e.preventDefault();
-      return;
-    }
-
-    // Node drag: left-click in select mode on a node
-    if (e.button === 0 && activeTool === 'select') {
-      const rect = canvasRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const sx = e.clientX - rect.left;
-      const sy = e.clientY - rect.top;
-      const hit = findNodeAt(sx, sy);
-      if (hit) {
-        setDraggingNodeId(hit.id);
-        didDragRef.current = false;
-        dragStartRef.current = { x: e.clientX, y: e.clientY };
-        e.preventDefault();
-      }
-    }
-  }, [activeTool, findNodeAt]);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (isPanning) {
-      setView(v => ({ ...v, offsetX: v.offsetX + (e.clientX - panStart.x), offsetY: v.offsetY + (e.clientY - panStart.y) }));
-      setPanStart({ x: e.clientX, y: e.clientY });
-      return;
-    }
-
-    if (draggingNodeId) {
-      const dx = e.clientX - dragStartRef.current.x;
-      const dy = e.clientY - dragStartRef.current.y;
-      // Only start drag after 3px movement to avoid accidental drags
-      if (!didDragRef.current && Math.hypot(dx, dy) < 3) return;
-      didDragRef.current = true;
-
-      const rect = canvasRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const sx = e.clientX - rect.left;
-      const sy = e.clientY - rect.top;
-      const world = toWorld(sx, sy);
-      moveNode(draggingNodeId, world.x, world.y);
-    }
-  }, [isPanning, panStart, draggingNodeId, toWorld, moveNode]);
-
-  const handleMouseUp = useCallback(() => {
-    setIsPanning(false);
-    if (draggingNodeId) {
-      setDraggingNodeId(null);
-      // didDragRef stays true to suppress the click event
-    }
-  }, [draggingNodeId]);
-
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-    const factor = e.deltaY < 0 ? 1.1 : 0.9;
-    setView(v => {
-      const newScale = Math.max(0.1, Math.min(10, v.scale * factor));
-      return { scale: newScale, offsetX: mx - (mx - v.offsetX) * (newScale / v.scale), offsetY: my - (my - v.offsetY) * (newScale / v.scale) };
-    });
-  }, []);
-
-  // --- Draw ---
+  // --- Map click handler ---
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
 
-    canvas.width = size.w * window.devicePixelRatio;
-    canvas.height = size.h * window.devicePixelRatio;
-    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    const onClick = (e: maplibregl.MapMouseEvent) => {
+      if (didDragRef.current) { didDragRef.current = false; return; }
 
-    ctx.fillStyle = '#f8f9fb';
-    ctx.fillRect(0, 0, size.w, size.h);
-    drawGrid(ctx, view, size.w, size.h);
+      const lngLat = e.lngLat;
+      const tool = useNetworkStore.getState().activeTool;
+      const drawFrom = useNetworkStore.getState().pipeDrawingFrom;
 
-    const allNodes = [
-      ...model.junctions.map(n => ({ ...n, type: 'junction' as const })),
-      ...model.reservoirs.map(n => ({ ...n, type: 'reservoir' as const })),
-      ...model.tanks.map(n => ({ ...n, type: 'tank' as const })),
-    ];
-    const nodeMap = new Map(allNodes.map(n => [n.id, n]));
-    const dc = model.designCriteria;
-
-    // Helper to draw a link line between two nodes
-    const drawLink = (fromId: string, toId: string, linkId: string, color: string, lineWidth: number, label?: string) => {
-      const from = nodeMap.get(fromId);
-      const to = nodeMap.get(toId);
-      if (!from || !to) return;
-      const a = toScreen(from.x, from.y);
-      const b = toScreen(to.x, to.y);
-
-      ctx.beginPath();
-      ctx.moveTo(a.sx, a.sy);
-      ctx.lineTo(b.sx, b.sy);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = linkId === selectedId ? lineWidth + 1.5 : lineWidth;
-      ctx.stroke();
-
-      const mx = (a.sx + b.sx) / 2, my = (a.sy + b.sy) / 2;
-      ctx.fillStyle = '#666'; ctx.font = '10px system-ui'; ctx.textAlign = 'center';
-      ctx.fillText(label || linkId, mx, my - 6);
-
-      const lr = getLinkResult(linkId);
-      if (lr) {
-        ctx.fillStyle = '#333'; ctx.font = 'bold 10px system-ui';
-        ctx.fillText(`${lr.flow.toFixed(1)} LPS`, mx, my + 12);
+      if (tool === 'junction') {
+        const id = useNetworkStore.getState().addJunction(lngLat.lng, lngLat.lat);
+        useNetworkStore.getState().selectElement(id, 'junction');
+        return;
+      }
+      if (tool === 'reservoir') {
+        const id = useNetworkStore.getState().addReservoir(lngLat.lng, lngLat.lat);
+        useNetworkStore.getState().selectElement(id, 'reservoir');
+        return;
+      }
+      if (tool === 'tank') {
+        const id = useNetworkStore.getState().addTank(lngLat.lng, lngLat.lat);
+        useNetworkStore.getState().selectElement(id, 'tank');
+        return;
       }
 
-      return { mx, my };
+      // Two-click link tools (pipe, pump, valve)
+      if (tool === 'pipe' || tool === 'pump' || tool === 'valve') {
+        const nodeFeatures = map.queryRenderedFeatures(e.point, { layers: ['nodes-circle'] });
+        if (nodeFeatures.length === 0) return;
+        const hitId = nodeFeatures[0].properties?.id as string;
+        const hitType = nodeFeatures[0].properties?.type as string;
+
+        if (!drawFrom) {
+          useNetworkStore.getState().setPipeDrawingFrom(hitId);
+        } else if (hitId !== drawFrom) {
+          let id: string;
+          let linkType: 'pipe' | 'pump' | 'valve';
+          if (tool === 'pump') { id = useNetworkStore.getState().addPump(drawFrom, hitId); linkType = 'pump'; }
+          else if (tool === 'valve') { id = useNetworkStore.getState().addValve(drawFrom, hitId); linkType = 'valve'; }
+          else { id = useNetworkStore.getState().addPipe(drawFrom, hitId); linkType = 'pipe'; }
+          useNetworkStore.getState().selectElement(id, linkType);
+          useNetworkStore.getState().setPipeDrawingFrom(null);
+        }
+        return;
+      }
+
+      // Select tool
+      if (tool === 'select') {
+        // Check nodes
+        const nodeFeatures = map.queryRenderedFeatures(e.point, { layers: ['nodes-circle'] });
+        if (nodeFeatures.length > 0) {
+          const id = nodeFeatures[0].properties?.id as string;
+          const type = nodeFeatures[0].properties?.type as 'junction' | 'reservoir' | 'tank';
+          useNetworkStore.getState().selectElement(id, type);
+          return;
+        }
+        // Check links
+        const linkFeatures = map.queryRenderedFeatures(e.point, { layers: ['links-line'] });
+        if (linkFeatures.length > 0) {
+          const id = linkFeatures[0].properties?.id as string;
+          const type = linkFeatures[0].properties?.type as 'pipe' | 'pump' | 'valve';
+          useNetworkStore.getState().selectElement(id, type);
+          return;
+        }
+        // Deselect
+        useNetworkStore.getState().selectElement(null, null);
+      }
     };
 
-    // Draw pipes
-    for (const pipe of model.pipes) {
-      const lr = getLinkResult(pipe.id);
-      let color = pipe.status === 'Closed' ? '#999' : '#3498db';
-      if (lr) {
-        const absV = Math.abs(lr.velocity);
-        if (absV < dc.velocityMin || absV > dc.velocityMax) color = '#e74c3c';
-        else if (absV < dc.velocityEconomicMin || absV > dc.velocityEconomicMax) color = '#f39c12';
-        else color = '#2ecc71';
+    map.on('click', onClick);
+    return () => { map.off('click', onClick); };
+  }, [mapReady]);
+
+  // --- Node drag ---
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+
+    const onMouseDown = (e: maplibregl.MapMouseEvent) => {
+      if (useNetworkStore.getState().activeTool !== 'select') return;
+
+      const nodeFeatures = map.queryRenderedFeatures(e.point, { layers: ['nodes-circle'] });
+      if (nodeFeatures.length === 0) return;
+
+      const nodeId = nodeFeatures[0].properties?.id as string;
+      draggingNodeIdRef.current = nodeId;
+      didDragRef.current = false;
+      map.dragPan.disable();
+      map.getCanvas().style.cursor = 'grabbing';
+    };
+
+    const onMouseMove = (e: maplibregl.MapMouseEvent) => {
+      if (!draggingNodeIdRef.current) return;
+      didDragRef.current = true;
+      const lngLat = e.lngLat;
+      useNetworkStore.getState().moveNode(draggingNodeIdRef.current, lngLat.lng, lngLat.lat);
+    };
+
+    const onMouseUp = () => {
+      if (draggingNodeIdRef.current) {
+        draggingNodeIdRef.current = null;
+        map.dragPan.enable();
+        map.getCanvas().style.cursor = '';
       }
+    };
 
-      const from = nodeMap.get(pipe.fromNode);
-      const to = nodeMap.get(pipe.toNode);
-      if (!from || !to) continue;
-      const a = toScreen(from.x, from.y);
-      const b = toScreen(to.x, to.y);
+    map.on('mousedown', 'nodes-circle', onMouseDown);
+    map.on('mousemove', onMouseMove);
+    map.on('mouseup', onMouseUp);
 
-      ctx.beginPath();
-      ctx.moveTo(a.sx, a.sy);
-      ctx.lineTo(b.sx, b.sy);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = pipe.id === selectedId ? 4 : 2.5;
-      if (pipe.status === 'Closed') ctx.setLineDash([6, 4]);
-      ctx.stroke();
-      ctx.setLineDash([]);
+    // Cursor style on hover
+    map.on('mouseenter', 'nodes-circle', () => {
+      if (useNetworkStore.getState().activeTool === 'select') map.getCanvas().style.cursor = 'grab';
+    });
+    map.on('mouseleave', 'nodes-circle', () => {
+      if (!draggingNodeIdRef.current) map.getCanvas().style.cursor = '';
+    });
 
-      const mx = (a.sx + b.sx) / 2, my = (a.sy + b.sy) / 2;
-      ctx.fillStyle = '#666'; ctx.font = '10px system-ui'; ctx.textAlign = 'center';
-      ctx.fillText(pipe.id, mx, my - 6);
-      if (lr) {
-        ctx.fillStyle = '#333'; ctx.font = 'bold 10px system-ui';
-        ctx.fillText(`${lr.flow.toFixed(1)} LPS`, mx, my + 12);
-      }
-    }
+    return () => {
+      map.off('mousedown', 'nodes-circle', onMouseDown);
+      map.off('mousemove', onMouseMove);
+      map.off('mouseup', onMouseUp);
+    };
+  }, [mapReady]);
 
-    // Draw pumps — orange line with circle icon at midpoint
-    for (const pump of model.pumps) {
-      const from = nodeMap.get(pump.fromNode);
-      const to = nodeMap.get(pump.toNode);
-      if (!from || !to) continue;
-      const a = toScreen(from.x, from.y);
-      const b = toScreen(to.x, to.y);
-
-      ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy);
-      ctx.strokeStyle = '#e67e22';
-      ctx.lineWidth = pump.id === selectedId ? 4 : 2.5;
-      ctx.stroke();
-
-      // Pump icon — filled circle with triangle at midpoint
-      const mx = (a.sx + b.sx) / 2, my = (a.sy + b.sy) / 2;
-      ctx.beginPath(); ctx.arc(mx, my, 7, 0, Math.PI * 2);
-      ctx.fillStyle = '#e67e22'; ctx.fill();
-      ctx.fillStyle = '#fff'; ctx.font = 'bold 9px system-ui'; ctx.textAlign = 'center';
-      ctx.fillText('P', mx, my + 3);
-
-      ctx.fillStyle = '#666'; ctx.font = '10px system-ui';
-      ctx.fillText(pump.id, mx, my - 12);
-
-      const lr = getLinkResult(pump.id);
-      if (lr) {
-        ctx.fillStyle = '#333'; ctx.font = 'bold 10px system-ui';
-        ctx.fillText(`${lr.flow.toFixed(1)} LPS`, mx, my + 20);
-      }
-    }
-
-    // Draw valves — purple line with diamond icon at midpoint
-    for (const valve of model.valves) {
-      const from = nodeMap.get(valve.fromNode);
-      const to = nodeMap.get(valve.toNode);
-      if (!from || !to) continue;
-      const a = toScreen(from.x, from.y);
-      const b = toScreen(to.x, to.y);
-
-      ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy);
-      ctx.strokeStyle = '#9b59b6';
-      ctx.lineWidth = valve.id === selectedId ? 4 : 2.5;
-      ctx.stroke();
-
-      // Valve icon — diamond at midpoint
-      const mx = (a.sx + b.sx) / 2, my = (a.sy + b.sy) / 2;
-      ctx.beginPath();
-      ctx.moveTo(mx, my - 7); ctx.lineTo(mx + 7, my); ctx.lineTo(mx, my + 7); ctx.lineTo(mx - 7, my);
-      ctx.closePath();
-      ctx.fillStyle = '#9b59b6'; ctx.fill();
-      ctx.fillStyle = '#fff'; ctx.font = 'bold 8px system-ui'; ctx.textAlign = 'center';
-      ctx.fillText('V', mx, my + 3);
-
-      ctx.fillStyle = '#666'; ctx.font = '10px system-ui';
-      ctx.fillText(valve.id, mx, my - 12);
-
-      const lr = getLinkResult(valve.id);
-      if (lr) {
-        ctx.fillStyle = '#333'; ctx.font = 'bold 10px system-ui';
-        ctx.fillText(`${lr.flow.toFixed(1)} LPS`, mx, my + 20);
-      }
-    }
-
-    // Draw nodes
-    for (const node of allNodes) {
-      const s = toScreen(node.x, node.y);
-      const isSelected = node.id === selectedId;
-      const isHighlighted = node.id === pipeDrawingFrom;
-      const isDragging = node.id === draggingNodeId;
-      const nr = getNodeResult(node.id);
-
-      ctx.beginPath();
-      if (node.type === 'reservoir') {
-        const r = NODE_RADIUS + 2;
-        ctx.moveTo(s.sx, s.sy - r); ctx.lineTo(s.sx - r, s.sy + r * 0.7); ctx.lineTo(s.sx + r, s.sy + r * 0.7);
-        ctx.closePath(); ctx.fillStyle = '#2980b9';
-      } else if (node.type === 'tank') {
-        const r = NODE_RADIUS;
-        ctx.rect(s.sx - r, s.sy - r, r * 2, r * 2);
-        ctx.fillStyle = '#8e44ad';
-      } else {
-        ctx.arc(s.sx, s.sy, NODE_RADIUS, 0, Math.PI * 2);
-        ctx.fillStyle = nr ? (nr.pressure >= dc.residualPressureFloor ? '#2ecc71' : '#e74c3c') : '#34495e';
-      }
-      ctx.fill();
-
-      if (isSelected || isHighlighted || isDragging) {
-        ctx.strokeStyle = isDragging ? '#e67e22' : isHighlighted ? '#f39c12' : '#3a5fcf';
-        ctx.lineWidth = 2.5; ctx.stroke();
-      }
-
-      ctx.fillStyle = '#333'; ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center';
-      ctx.fillText(node.id, s.sx, s.sy - NODE_RADIUS - 4);
-
-      if (nr && node.type === 'junction') {
-        ctx.fillStyle = nr.pressure >= dc.residualPressureFloor ? '#155724' : '#721c24';
-        ctx.font = '10px system-ui';
-        ctx.fillText(`${nr.pressure.toFixed(1)}m`, s.sx, s.sy + NODE_RADIUS + 14);
-      }
-    }
-
-    // Drawing guide
-    if ((activeTool === 'pipe' || activeTool === 'pump' || activeTool === 'valve') && pipeDrawingFrom) {
-      const toolName = activeTool === 'pump' ? 'pump' : activeTool === 'valve' ? 'valve' : 'pipe';
-      ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.font = '12px system-ui'; ctx.textAlign = 'left';
-      ctx.fillText(`Drawing ${toolName} from ${pipeDrawingFrom} — click another node`, 10, size.h - 10);
-    }
-  }, [model, view, size, selectedId, pipeDrawingFrom, draggingNodeId, activeTool, toScreen, getNodeResult, getLinkResult]);
-
-  // Cursor logic
-  const getCursor = () => {
-    if (draggingNodeId) return 'grabbing';
-    if (activeTool === 'select') return 'default';
-    return 'crosshair';
-  };
+  // --- Cursor for placement tools ---
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.getCanvas().style.cursor = activeTool === 'select' ? '' : 'crosshair';
+  }, [activeTool]);
 
   return (
-    <div className="map-container" ref={containerRef}>
+    <div className="map-container">
       <div className="top-bar">
         <button className="compute-btn" onClick={() => solve()} disabled={isSolving}>
           {isSolving ? '⏳ Solving…' : '▶ Compute'}
@@ -571,7 +466,6 @@ export function MapCanvas() {
 
         <ExportPanel />
 
-        {/* EPS time slider */}
         {epsResult && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
             <span style={{ fontSize: 11, color: '#fff', background: 'rgba(0,0,0,0.5)', padding: '2px 8px', borderRadius: 3 }}>
@@ -584,10 +478,7 @@ export function MapCanvas() {
         )}
       </div>
 
-      <canvas ref={canvasRef}
-        style={{ width: size.w, height: size.h, cursor: getCursor() }}
-        onClick={handleClick} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onWheel={handleWheel} />
+      <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
 
       <div className="inp-viewer">
         <button className="inp-toggle" onClick={() => setShowInp(!showInp)}>
@@ -595,26 +486,19 @@ export function MapCanvas() {
         </button>
         {showInp && lastInp && <div className="inp-content">{lastInp}</div>}
       </div>
+
+      {/* Drawing guide */}
+      {(activeTool === 'pipe' || activeTool === 'pump' || activeTool === 'valve') && pipeDrawingFrom && (
+        <div style={{
+          position: 'absolute', bottom: 12, left: 12,
+          background: 'rgba(0,0,0,0.7)', color: '#fff', padding: '6px 12px',
+          borderRadius: 4, fontSize: 12, zIndex: 5,
+        }}>
+          Drawing {activeTool} from {pipeDrawingFrom} — click another node
+        </div>
+      )}
     </div>
   );
-}
-
-function drawGrid(ctx: CanvasRenderingContext2D, view: ViewTransform, w: number, h: number) {
-  const gridSize = 50 * view.scale;
-  if (gridSize < 5) return;
-  ctx.strokeStyle = '#e8e8e8'; ctx.lineWidth = 0.5;
-  const startX = view.offsetX % gridSize;
-  const startY = view.offsetY % gridSize;
-  for (let x = startX; x < w; x += gridSize) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
-  for (let y = startY; y < h; y += gridSize) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
-}
-
-function pointToSegmentDist(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
-  const dx = bx - ax, dy = by - ay, lenSq = dx * dx + dy * dy;
-  if (lenSq === 0) return Math.hypot(px - ax, py - ay);
-  let t = ((px - ax) * dx + (py - ay) * dy) / lenSq;
-  t = Math.max(0, Math.min(1, t));
-  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
 }
 
 function formatTime(seconds: number): string {
@@ -622,4 +506,3 @@ function formatTime(seconds: number): string {
   const m = Math.floor((seconds % 3600) / 60);
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 }
-
