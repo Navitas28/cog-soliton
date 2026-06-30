@@ -132,7 +132,7 @@ export function serializeToInp(model: NetworkModel): string {
 
   // [OPTIONS]
   push('[OPTIONS]');
-  pushOptions(push, model.options);
+  pushOptions(push, model.options, model.patterns);
   push('');
 
   // [COORDINATES]
@@ -172,7 +172,7 @@ function pushTimes(push: (s: string) => void, opts: SimulationOptions) {
   push(` Statistic           NONE`);
 }
 
-function pushOptions(push: (s: string) => void, opts: SimulationOptions) {
+function pushOptions(push: (s: string) => void, opts: SimulationOptions, patterns: DemandPattern[] = []) {
   push(` Units               ${opts.flowUnits}`);
   push(` Headloss            ${opts.headloss}`);
   push(` Specific Gravity    1.0`);
@@ -183,7 +183,9 @@ function pushOptions(push: (s: string) => void, opts: SimulationOptions) {
   push(` MAXCHECK            10`);
   push(` DAMPLIMIT           0`);
   push(` Unbalanced          ${opts.unbalanced} ${opts.unbalancedN}`);
-  push(` Pattern             1`);
+  if (patterns.length > 0) {
+    push(` Pattern             ${patterns[0].id}`);
+  }
   push(` Demand Multiplier   ${opts.demandMultiplier}`);
   push(` Emitter Exponent    0.5`);
   push(` Quality             None mg/L`);

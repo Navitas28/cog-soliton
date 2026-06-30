@@ -4,7 +4,8 @@ export function PropertiesPanel() {
   const selectedId = useNetworkStore(s => s.selectedElementId);
   const selectedType = useNetworkStore(s => s.selectedElementType);
   const model = useNetworkStore(s => s.model);
-  const solveResult = useNetworkStore(s => s.solveResult);
+  const getNodeResultAtTime = useNetworkStore(s => s.getNodeResultAtTime);
+  const getLinkResultAtTime = useNetworkStore(s => s.getLinkResultAtTime);
   const updateJunction = useNetworkStore(s => s.updateJunction);
   const updateReservoir = useNetworkStore(s => s.updateReservoir);
   const updatePipe = useNetworkStore(s => s.updatePipe);
@@ -41,8 +42,8 @@ export function PropertiesPanel() {
     );
   }
 
-  const nodeResult = solveResult?.nodeResults.get(selectedId);
-  const linkResult = solveResult?.linkResults.get(selectedId);
+  const nodeResult = getNodeResultAtTime(selectedId);
+  const linkResult = getLinkResultAtTime(selectedId);
   const pressureFloor = model.designCriteria.residualPressureFloor;
 
   if (selectedType === 'junction') {

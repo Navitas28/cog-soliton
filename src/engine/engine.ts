@@ -4,12 +4,26 @@
  */
 import { Workspace, Project, NodeProperty, LinkProperty, InitHydOption, CountType } from 'epanet-js';
 
+export interface NodeResult {
+  pressure: number;
+  head: number;
+  demand: number;
+  tankLevel: number; // only meaningful for tanks, 0 for junctions/reservoirs
+}
+
+export interface LinkResult {
+  flow: number;
+  velocity: number;
+  headloss: number;
+}
+
 export interface SteadyStateResult {
-  nodeResults: Map<string, { pressure: number; head: number; demand: number }>;
-  linkResults: Map<string, { flow: number; velocity: number; headloss: number }>;
+  nodeResults: Map<string, NodeResult>;
+  linkResults: Map<string, LinkResult>;
 }
 
 let _workspace: Workspace | null = null;
+let _solveCounter = 0;
 
 /** Lazily initialise the WASM workspace — must be awaited before any solver call. */
 export async function getWorkspace(): Promise<Workspace> {
@@ -17,6 +31,11 @@ export async function getWorkspace(): Promise<Workspace> {
   _workspace = new Workspace();
   await _workspace.loadModule();
   return _workspace;
+}
+
+/** Unique file prefix to avoid stale WASM filesystem collisions between solves */
+function solvePrefix(): string {
+  return `s${++_solveCounter}`;
 }
 
 /**
@@ -27,9 +46,10 @@ export async function solveSteadyState(inp: string): Promise<SteadyStateResult> 
   const ws = await getWorkspace();
   const project = new Project(ws);
 
-  // Write INP to WASM virtual filesystem
-  ws.writeFile('model.inp', inp);
-  project.open('model.inp', 'report.rpt', 'out.bin');
+  // Write INP to WASM virtual filesystem with unique names
+  const pfx = solvePrefix();
+  ws.writeFile(`${pfx}.inp`, inp);
+  project.open(`${pfx}.inp`, `${pfx}.rpt`, `${pfx}.bin`);
 
   project.solveH();
 
@@ -44,6 +64,7 @@ export async function solveSteadyState(inp: string): Promise<SteadyStateResult> 
       pressure: project.getNodeValue(i, NodeProperty.Pressure),
       head: project.getNodeValue(i, NodeProperty.Head),
       demand: project.getNodeValue(i, NodeProperty.Demand),
+      tankLevel: project.getNodeValue(i, NodeProperty.TankLevel),
     });
   }
 
@@ -69,16 +90,17 @@ export async function solveSteadyState(inp: string): Promise<SteadyStateResult> 
  */
 export interface EPSResults {
   timestamps: number[];
-  nodeResults: Map<number, Map<string, { pressure: number; head: number; demand: number }>>;
-  linkResults: Map<number, Map<string, { flow: number; velocity: number; headloss: number }>>;
+  nodeResults: Map<number, Map<string, NodeResult>>;
+  linkResults: Map<number, Map<string, LinkResult>>;
 }
 
 export async function solveEPS(inp: string): Promise<EPSResults> {
   const ws = await getWorkspace();
   const project = new Project(ws);
 
-  ws.writeFile('model.inp', inp);
-  project.open('model.inp', 'report.rpt', 'out.bin');
+  const pfx = solvePrefix();
+  ws.writeFile(`${pfx}.inp`, inp);
+  project.open(`${pfx}.inp`, `${pfx}.rpt`, `${pfx}.bin`);
 
   const timestamps: number[] = [];
   const nodeResults = new Map<number, Map<string, { pressure: number; head: number; demand: number }>>();
