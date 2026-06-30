@@ -651,6 +651,35 @@ html, body, #root {
   z-index: 15;
 }
 
+.demo-city-tabs {
+  display: flex;
+  padding: 6px 6px 0;
+  gap: 2px;
+}
+
+.demo-city-tab {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  color: #888;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.demo-city-tab:hover {
+  background: #f0f2f5;
+  color: #333;
+}
+
+.demo-city-tab.active {
+  background: #3a5fcf;
+  color: #fff;
+}
+
 .demo-loader-header {
   padding: 8px 14px 6px;
   font-size: 10px;

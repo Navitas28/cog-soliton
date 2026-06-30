@@ -13,6 +13,7 @@ import { buildNodeFeatures, buildLinkFeatures, buildLabelFeatures, offlineBlankS
 import { MapLegend } from './ColorLegend';
 import { loadNetworkIcons } from './mapIcons';
 import { AYODHYA_OUTLINE } from '../data/ayodhyaOutline';
+import { BHUBANESWAR_OUTLINE } from '../data/bhubaneswarOutline';
 import type { NodeResult, LinkResult } from '../engine/engine';
 import type { DrawingTool } from '../store/networkStore';
 
@@ -323,12 +324,22 @@ export function MapCanvas() {
     const map = mapRef.current;
     if (!map || !mapReady) return;
 
-    // Show Ayodhya outline only when Ayodhya model is loaded
-    const isAyodhya = model.title.toLowerCase().includes('ayodhya');
+    // Update outline data and visibility based on loaded city
+    const titleLower = model.title.toLowerCase();
+    const isAyodhya = titleLower.includes('ayodhya');
+    const isBbsr = titleLower.includes('bhubaneswar');
+    const showOutline = isAyodhya || isBbsr;
+
+    // Swap outline GeoJSON source data based on city
+    const outlineSrc = map.getSource(SRC_OUTLINE) as maplibregl.GeoJSONSource;
+    if (outlineSrc) {
+      outlineSrc.setData(isBbsr ? BHUBANESWAR_OUTLINE : AYODHYA_OUTLINE);
+    }
+
     const outlineLayers = ['outline-fill', 'outline-border'];
     for (const layerId of outlineLayers) {
       if (map.getLayer(layerId)) {
-        map.setLayoutProperty(layerId, 'visibility', isAyodhya ? 'visible' : 'none');
+        map.setLayoutProperty(layerId, 'visibility', showOutline ? 'visible' : 'none');
       }
     }
 
