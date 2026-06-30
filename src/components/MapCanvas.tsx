@@ -17,6 +17,7 @@ import { CalibrationPanel } from './CalibrationPanel';
 import { FireFlowPanel } from './FireFlowPanel';
 import { ZonePanel } from './ZonePanel';
 import { CriticalityPanel } from './CriticalityPanel';
+import { DemandWizard } from './DemandWizard';
 import { SearchBox } from './SearchBox';
 import { CostPanel } from './CostPanel';
 import { OptimizerPanel } from './OptimizerPanel';
@@ -87,6 +88,7 @@ export function MapCanvas() {
   const [showFireFlow, setShowFireFlow] = useState(false);
   const [showZones, setShowZones] = useState(false);
   const [showCriticality, setShowCriticality] = useState(false);
+  const [showDemandWizard, setShowDemandWizard] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const toggleDropdown = (name: string) => setOpenDropdown(prev => prev === name ? null : name);
 
@@ -800,6 +802,10 @@ export function MapCanvas() {
                     onClick={() => { setShowCost(!showCost); setOpenDropdown(null); }}>
                     💰 Cost Estimate
                   </button>
+                  <button className="top-bar-dropdown-item"
+                    onClick={() => { setShowDemandWizard(true); setOpenDropdown(null); }}>
+                    📊 Demand Allocation
+                  </button>
                   <div className="top-bar-dropdown-divider" />
                   <button className="top-bar-dropdown-item"
                     onClick={() => { setShowOptimizer(true); setOpenDropdown(null); }}>
@@ -923,6 +929,9 @@ export function MapCanvas() {
 
       {/* Zones panel */}
       {showZones && <ZonePanel onClose={() => setShowZones(false)} />}
+
+      {/* Demand wizard */}
+      {showDemandWizard && <DemandWizard onClose={() => setShowDemandWizard(false)} />}
 
       {/* Calibration panel */}
       {showCalibration && <CalibrationPanel onClose={() => setShowCalibration(false)} />}
