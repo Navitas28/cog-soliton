@@ -1,0 +1,218 @@
+[TITLE]
+Ayodhya AMRUT 2.0 — 24×7 in 11 wards
+
+[JUNCTIONS]
+;ID              Elev            Demand          Pattern
+ TN1             38.00           0.5000          1                ;
+ TN2             36.00           0.5000          1                ;
+ C1              34.00           8.0000          1                ;
+ C2              33.00           12.0000         1                ;
+ C3              33.00           10.0000         1                ;
+ C4              32.00           7.0000          1                ;
+ C5              32.00           9.0000          1                ;
+ C6              33.00           6.0000          1                ;
+ G1              30.00           10.0000         1                ;
+ G2              30.00           8.0000          1                ;
+ G3              31.00           7.0000          1                ;
+ G4              31.00           6.0000          1                ;
+ N1              36.00           4.0000          1                ;
+ N2              35.00           5.0000          1                ;
+ N3              34.00           5.0000          1                ;
+ N4              34.00           4.0000          1                ;
+ N5              35.00           3.0000          1                ;
+ S1              30.00           5.0000          1                ;
+ S2              29.00           6.0000          1                ;
+ S3              29.00           7.0000          1                ;
+ S4              28.00           5.0000          1                ;
+ S5              28.00           4.0000          1                ;
+ E1              34.00           4.0000          1                ;
+ E2              33.00           5.0000          1                ;
+ E3              32.00           4.0000          1                ;
+ W1              34.00           4.0000          1                ;
+ W2              33.00           5.0000          1                ;
+ W3              32.00           5.0000          1                ;
+ F1              36.00           6.0000          1                ;
+ F2              38.00           5.0000          1                ;
+ F3              40.00           4.0000          1                ;
+ SW1             31.00           3.0000          1                ;
+ SW2             32.00           3.0000          1                ;
+
+[RESERVOIRS]
+;ID              Head            Pattern
+ WTP             85.00                           ;
+
+[TANKS]
+;ID              Elevation       InitLevel       MinLevel        MaxLevel        Diameter        MinVol          VolCurve
+ OHT1            45.00           4.00            1.00            8.00            20.00           0.00                            ;
+ OHT2            42.00           3.50            1.00            7.00            16.00           0.00                            ;
+
+[PIPES]
+;ID              Node1           Node2           Length          Diameter        Roughness       MinorLoss       Status
+ TM1             WTP             TN1             400.00          500.00          140.0           0.00            Open  ;
+ TM2             TN1             TN2             300.00          450.00          140.0           0.00            Open  ;
+ TM3             TN2             OHT1            250.00          400.00          140.0           0.00            Open  ;
+ TM4             TN2             N1              200.00          350.00          140.0           0.00            Open  ;
+ D1              OHT1            G1              200.00          300.00          140.0           0.00            Open  ;
+ D2              OHT1            N2              150.00          300.00          140.0           0.00            Open  ;
+ GH1             G1              G2              200.00          250.00          130.0           0.00            Open  ;
+ GH2             G2              G3              200.00          250.00          130.0           0.00            Open  ;
+ GH3             G3              G4              200.00          200.00          130.0           0.00            Open  ;
+ GC1             G1              C1              350.00          250.00          130.0           0.00            Open  ;
+ GC2             G2              C2              350.00          250.00          130.0           0.00            Open  ;
+ GC3             G3              C3              300.00          200.00          130.0           0.00            Open  ;
+ NG1             N1              N2              200.00          250.00          130.0           0.00            Open  ;
+ NG2             N2              N3              200.00          250.00          130.0           0.00            Open  ;
+ NG3             N3              N4              200.00          200.00          130.0           0.00            Open  ;
+ NG4             N4              N5              200.00          200.00          130.0           0.00            Open  ;
+ NC1             N2              G2              300.00          250.00          130.0           0.00            Open  ;
+ NC2             N3              C2              500.00          250.00          130.0           0.00            Open  ;
+ NC3             N5              G4              300.00          200.00          130.0           0.00            Open  ;
+ CG1             C1              C2              200.00          250.00          130.0           0.00            Open  ;
+ CG2             C2              C3              200.00          250.00          130.0           0.00            Open  ;
+ CG3             C1              C4              250.00          200.00          130.0           0.00            Open  ;
+ CG4             C4              C5              200.00          200.00          130.0           0.00            Open  ;
+ CG5             C3              C6              150.00          200.00          130.0           0.00            Open  ;
+ CG6             C5              C6              200.00          200.00          130.0           0.00            Open  ;
+ CG7             C2              C5              200.00          200.00          130.0           0.00            Open  ;
+ TF1             C5              OHT2            800.00          350.00          140.0           0.00            Open  ;
+ SD1             OHT2            S3              200.00          250.00          130.0           0.00            Open  ;
+ SD2             S1              S2              200.00          200.00          130.0           0.00            Open  ;
+ SD3             S2              S3              200.00          200.00          130.0           0.00            Open  ;
+ SD4             S3              S4              200.00          200.00          130.0           0.00            Open  ;
+ SD5             S4              S5              200.00          150.00          130.0           0.00            Open  ;
+ CS1             C4              S1              400.00          200.00          130.0           0.00            Open  ;
+ CS2             C5              S3              500.00          200.00          130.0           0.00            Open  ;
+ WG1             C1              W1              400.00          200.00          130.0           0.00            Open  ;
+ WG2             W1              W2              250.00          200.00          130.0           0.00            Open  ;
+ WG3             W2              W3              250.00          150.00          130.0           0.00            Open  ;
+ WG4             W3              S1              300.00          150.00          130.0           0.00            Open  ;
+ EG1             C6              E1              300.00          200.00          130.0           0.00            Open  ;
+ EG2             E1              E2              250.00          200.00          130.0           0.00            Open  ;
+ EG3             E2              E3              250.00          150.00          130.0           0.00            Open  ;
+ EG4             E3              S5              350.00          150.00          130.0           0.00            Open  ;
+ FP1             S5              F1              500.00          100.00          120.0           0.00            Open  ;
+ FP2             F1              F2              300.00          80.00           120.0           0.00            Open  ;
+ FP3             F2              F3              300.00          80.00           120.0           0.00            Open  ;
+ SWG1            W3              SW1             300.00          150.00          130.0           0.00            Open  ;
+ SWG2            SW1             SW2             250.00          100.00          120.0           0.00            Open  ;
+ L1              G4              E1              300.00          200.00          130.0           0.00            Open  ;
+ L2              N1              G1              250.00          200.00          130.0           0.00            Open  ;
+ L3              W1              N1              200.00          200.00          130.0           0.00            Open  ;
+
+[PUMPS]
+;ID              Node1           Node2           Parameters
+
+[VALVES]
+;ID              Node1           Node2           Diameter        Type    Setting         MinorLoss
+
+[PATTERNS]
+;ID              Multipliers
+ 1               0.4000    0.3000    0.3000    0.3000    0.4000    0.6000
+ 1               1.0000    1.5000    2.0000    2.5000    2.2000    1.8000
+ 1               1.5000    1.3000    1.2000    1.2000    1.4000    1.6000
+ 1               2.0000    2.5000    2.2000    1.8000    1.2000    0.6000
+
+[CURVES]
+;ID              X-Value         Y-Value
+
+[ENERGY]
+ Global Efficiency  75
+ Global Price       0
+ Demand Charge      0
+
+[TIMES]
+ Duration            24:00
+ Hydraulic Timestep  1:00
+ Quality Timestep    0:05
+ Pattern Timestep    1:00
+ Pattern Start       0:00
+ Report Timestep     1:00
+ Report Start        0:00
+ Start ClockTime     12 am
+ Statistic           NONE
+
+[REPORT]
+ Status              No
+ Summary             No
+ Page                0
+
+[OPTIONS]
+ Units               LPS
+ Headloss            H-W
+ Specific Gravity    1.0
+ Viscosity           1.0
+ Trials              40
+ Accuracy            0.001
+ CHECKFREQ           2
+ MAXCHECK            10
+ DAMPLIMIT           0
+ Unbalanced          Continue 10
+ Pattern             1
+ Demand Multiplier   1
+ Emitter Exponent    0.5
+ Quality             None mg/L
+ Diffusivity         1.0
+ Tolerance           0.01
+
+[COORDINATES]
+;Node            X-Coord            Y-Coord
+ TN1             82.176400           26.812600
+ TN2             82.182400           26.806600
+ C1              82.195900           26.794600
+ C2              82.200400           26.793100
+ C3              82.204900           26.791600
+ C4              82.197400           26.788600
+ C5              82.203400           26.788600
+ C6              82.207900           26.790100
+ G1              82.191400           26.803600
+ G2              82.197400           26.802100
+ G3              82.203400           26.800600
+ G4              82.209400           26.799100
+ N1              82.185400           26.809600
+ N2              82.191400           26.809600
+ N3              82.197400           26.808100
+ N4              82.203400           26.808100
+ N5              82.209400           26.806600
+ S1              82.188400           26.779600
+ S2              82.194400           26.778100
+ S3              82.200400           26.776600
+ S4              82.206400           26.775100
+ S5              82.212400           26.773600
+ E1              82.215400           26.791600
+ E2              82.218400           26.785600
+ E3              82.221400           26.779600
+ W1              82.182400           26.791600
+ W2              82.179400           26.785600
+ W3              82.176400           26.779600
+ F1              82.224400           26.767600
+ F2              82.230400           26.764600
+ F3              82.236400           26.761600
+ SW1             82.173400           26.773600
+ SW2             82.170400           26.767600
+ WTP             82.175000           26.808000
+ OHT1            82.188400           26.800600
+ OHT2            82.224400           26.776600
+
+[VERTICES]
+;Link            X-Coord            Y-Coord
+
+[QUALITY]
+
+[SOURCES]
+;Node            Type            Baseline        Pattern
+
+[REACTIONS]
+
+[MIXING]
+
+[CONTROLS]
+
+[RULES]
+
+[LABELS]
+
+[BACKDROP]
+
+[EMITTERS]
+
+[END]

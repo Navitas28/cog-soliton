@@ -23,6 +23,7 @@ export interface LinkFeatureProps {
   type: 'pipe' | 'pump' | 'valve';
   selected: boolean;
   closed: boolean;
+  diameter: number;
   // Result-derived
   hasResult: boolean;
   flow: number;
@@ -90,7 +91,7 @@ export function buildLinkFeatures(
     return 'fail';
   };
 
-  const addLink = (id: string, fromId: string, toId: string, type: LinkFeatureProps['type'], closed: boolean, vertices?: [number, number][]) => {
+  const addLink = (id: string, fromId: string, toId: string, type: LinkFeatureProps['type'], closed: boolean, diameter: number, vertices?: [number, number][]) => {
     const from = nodeMap.get(fromId);
     const to = nodeMap.get(toId);
     if (!from || !to) return;
@@ -104,6 +105,7 @@ export function buildLinkFeatures(
         type,
         selected: id === selectedId,
         closed,
+        diameter,
         hasResult: !!lr,
         flow: lr?.flow ?? 0,
         velocity: lr?.velocity ?? 0,
@@ -112,9 +114,9 @@ export function buildLinkFeatures(
     });
   };
 
-  for (const p of model.pipes) addLink(p.id, p.fromNode, p.toNode, 'pipe', p.status === 'Closed', p.vertices);
-  for (const p of model.pumps) addLink(p.id, p.fromNode, p.toNode, 'pump', false);
-  for (const v of model.valves) addLink(v.id, v.fromNode, v.toNode, 'valve', false);
+  for (const p of model.pipes) addLink(p.id, p.fromNode, p.toNode, 'pipe', p.status === 'Closed', p.diameter, p.vertices);
+  for (const p of model.pumps) addLink(p.id, p.fromNode, p.toNode, 'pump', false, 0);
+  for (const v of model.valves) addLink(v.id, v.fromNode, v.toNode, 'valve', false, v.diameter);
 
   return { type: 'FeatureCollection', features };
 }
@@ -132,9 +134,9 @@ export function buildLabelFeatures(
   for (const t of model.tanks) nodeMap.set(t.id, t);
 
   const allLinks = [
-    ...model.pipes.map(p => ({ id: p.id, from: p.fromNode, to: p.toNode, linkType: 'pipe' })),
-    ...model.pumps.map(p => ({ id: p.id, from: p.fromNode, to: p.toNode, linkType: 'pump' })),
-    ...model.valves.map(v => ({ id: v.id, from: v.fromNode, to: v.toNode, linkType: 'valve' })),
+    ...model.pipes.map(p => ({ id: p.id, from: p.fromNode, to: p.toNode, linkType: 'pipe', diameter: p.diameter, length: p.length })),
+    ...model.pumps.map(p => ({ id: p.id, from: p.fromNode, to: p.toNode, linkType: 'pump', diameter: 0, length: 0 })),
+    ...model.valves.map(v => ({ id: v.id, from: v.fromNode, to: v.toNode, linkType: 'valve', diameter: v.diameter, length: 0 })),
   ];
 
   for (const link of allLinks) {
@@ -152,7 +154,51 @@ export function buildLabelFeatures(
         label: link.id,
         linkType: link.linkType,
         flowLabel: lr ? `${lr.flow.toFixed(1)} LPS` : '',
+        annotationLabel: link.linkType === 'pipe'
+          ? `${link.id}\nL=${link.length.toFixed(0)}m, Ø${link.diameter}mm`
+          : link.id,
       },
+    });
+  }
+
+  return { type: 'FeatureCollection', features };
+}
+
+/** Build flow direction arrow features at 1/2 along each pipe */
+export function buildFlowArrowFeatures(
+  model: NetworkModel,
+  getLinkResult: (id: string) => LinkResult | undefined,
+): GeoJSON.FeatureCollection<GeoJSON.Point> {
+  const features: GeoJSON.Feature<GeoJSON.Point>[] = [];
+
+  const nodeMap = new Map<string, { x: number; y: number }>();
+  for (const j of model.junctions) nodeMap.set(j.id, j);
+  for (const r of model.reservoirs) nodeMap.set(r.id, r);
+  for (const t of model.tanks) nodeMap.set(t.id, t);
+
+  for (const pipe of model.pipes) {
+    const lr = getLinkResult(pipe.id);
+    if (!lr || Math.abs(lr.flow) < 0.001) continue;
+
+    const from = nodeMap.get(pipe.fromNode);
+    const to = nodeMap.get(pipe.toNode);
+    if (!from || !to) continue;
+
+    // Arrow at midpoint
+    const mx = (from.x + to.x) / 2;
+    const my = (from.y + to.y) / 2;
+
+    // Bearing from → to (degrees, 0 = north, clockwise)
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    let bearing = Math.atan2(dx, dy) * (180 / Math.PI); // atan2(dx,dy) gives bearing from north
+    // Reverse if flow is negative
+    if (lr.flow < 0) bearing += 180;
+
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [mx, my] },
+      properties: { rotation: bearing },
     });
   }
 

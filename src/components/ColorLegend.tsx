@@ -38,7 +38,7 @@ export function computeFlowRange(
 }
 
 /** Design-view map legend — explains node/pipe colors and symbols */
-export function MapLegend() {
+export function MapLegend({ colorMode = 'velocity' }: { colorMode?: 'velocity' | 'diameter' }) {
   const model = useNetworkStore(s => s.model);
   const solveResult = useNetworkStore(s => s.solveResult);
   const epsResult = useNetworkStore(s => s.epsResult);
@@ -83,7 +83,7 @@ export function MapLegend() {
             )}
           </div>
 
-          {hasResults && (
+          {hasResults && colorMode === 'velocity' && (
             <div className="map-legend-section">
               <div className="map-legend-section-title">Pipes — Velocity</div>
               <div className="map-legend-row">
@@ -97,6 +97,36 @@ export function MapLegend() {
               <div className="map-legend-row">
                 <span className="map-legend-line" style={{ background: '#e74c3c' }} />
                 <span>Fail (outside band)</span>
+              </div>
+            </div>
+          )}
+
+          {colorMode === 'diameter' && (
+            <div className="map-legend-section">
+              <div className="map-legend-section-title">Pipes — Diameter</div>
+              <div className="map-legend-row">
+                <span className="map-legend-line" style={{ background: '#2ecc71' }} />
+                <span>100 mm</span>
+              </div>
+              <div className="map-legend-row">
+                <span className="map-legend-line" style={{ background: '#e74c3c' }} />
+                <span>150 mm</span>
+              </div>
+              <div className="map-legend-row">
+                <span className="map-legend-line" style={{ background: '#3498db' }} />
+                <span>200 mm</span>
+              </div>
+              <div className="map-legend-row">
+                <span className="map-legend-line" style={{ background: '#e67e22' }} />
+                <span>250 mm</span>
+              </div>
+              <div className="map-legend-row">
+                <span className="map-legend-line" style={{ background: '#8e44ad' }} />
+                <span>300 mm</span>
+              </div>
+              <div className="map-legend-row">
+                <span className="map-legend-line" style={{ background: '#2c3e50' }} />
+                <span>350+ mm</span>
               </div>
             </div>
           )}

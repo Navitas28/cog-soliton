@@ -9,7 +9,7 @@ import { useNetworkStore } from '../store/networkStore';
 import { DemoLoader } from './DemoLoader';
 import { ExportPanel } from './ExportPanel';
 import { ScadaIndicator } from './ScadaPanel';
-import { buildNodeFeatures, buildLinkFeatures, buildLabelFeatures, offlineBlankStyle, countPressurePassing, countVelocityPassing } from './mapHelpers';
+import { buildNodeFeatures, buildLinkFeatures, buildLabelFeatures, buildFlowArrowFeatures, offlineBlankStyle, countPressurePassing, countVelocityPassing } from './mapHelpers';
 import { MapLegend } from './ColorLegend';
 import { ComparisonDashboard } from './ComparisonDashboard';
 import { ShortcutOverlay } from './ShortcutOverlay';
@@ -43,6 +43,7 @@ const SRC_NODES = 'network-nodes';
 const SRC_LINKS = 'network-links';
 const SRC_LABELS = 'network-labels';
 const SRC_OUTLINE = 'ayodhya-outline';
+const SRC_ARROWS = 'network-arrows';
 
 const EMPTY_FC: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
 
@@ -97,6 +98,9 @@ export function MapCanvas() {
   const [showPressureLabels, setShowPressureLabels] = useState(true);
   const [showFlowLabels, setShowFlowLabels] = useState(true);
   const [showLegend, setShowLegend] = useState(true);
+  const [showPipeAnnotations, setShowPipeAnnotations] = useState(false);
+  const [showFlowArrows, setShowFlowArrows] = useState(true);
+  const [colorMode, setColorMode] = useState<'velocity' | 'diameter'>('velocity');
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showNewProject, setShowNewProject] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -355,6 +359,26 @@ export function MapCanvas() {
         },
       });
 
+      // Flow direction arrows
+      map.addSource(SRC_ARROWS, { type: 'geojson', data: EMPTY_FC });
+      map.addLayer({
+        id: 'flow-arrows', type: 'symbol', source: SRC_ARROWS,
+        minzoom: 11,
+        layout: {
+          'text-field': '▶',
+          'text-size': 10,
+          'text-rotate': ['get', 'rotation'],
+          'text-rotation-alignment': 'map',
+          'text-allow-overlap': true,
+          'text-ignore-placement': true,
+        },
+        paint: {
+          'text-color': 'rgba(26, 26, 46, 0.6)',
+          'text-halo-color': '#fff',
+          'text-halo-width': 1,
+        },
+      });
+
       setMapReady(true);
     });
 
@@ -386,6 +410,9 @@ export function MapCanvas() {
     if (nodeSrc) nodeSrc.setData(buildNodeFeatures(model, getNodeResult, selectedId, pipeDrawingFrom, draggingNodeIdRef.current, monitoredNodeIds));
     if (linkSrc) linkSrc.setData(buildLinkFeatures(model, getLinkResult, selectedId));
     if (labelSrc) labelSrc.setData(buildLabelFeatures(model, getLinkResult));
+
+    const arrowSrc = map.getSource(SRC_ARROWS) as maplibregl.GeoJSONSource;
+    if (arrowSrc) arrowSrc.setData(buildFlowArrowFeatures(model, getLinkResult));
 
     const vertexSrc = map.getSource('network-vertices') as maplibregl.GeoJSONSource;
     if (vertexSrc) {
@@ -738,6 +765,57 @@ export function MapCanvas() {
     if (map.getLayer('link-labels')) map.setLayoutProperty('link-labels', 'visibility', showFlowLabels ? 'visible' : 'none');
   }, [showNodeLabels, showPressureLabels, showFlowLabels, mapReady]);
 
+  // --- Toggle pipe color mode (velocity vs diameter) ---
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    const velocityColor: maplibregl.ExpressionSpecification = [
+      'case',
+      ['==', ['get', 'velocityStatus'], 'optimal'], '#2ecc71',
+      ['==', ['get', 'velocityStatus'], 'ok'], '#f39c12',
+      ['==', ['get', 'velocityStatus'], 'fail'], '#e74c3c',
+      ['==', ['get', 'type'], 'pump'], '#e67e22',
+      ['==', ['get', 'type'], 'valve'], '#9b59b6',
+      ['boolean', ['get', 'closed'], false], '#999999',
+      '#3498db',
+    ];
+    const diameterColor: maplibregl.ExpressionSpecification = [
+      'case',
+      ['==', ['get', 'type'], 'pump'], '#e67e22',
+      ['==', ['get', 'type'], 'valve'], '#9b59b6',
+      ['step', ['get', 'diameter'],
+        '#2ecc71',   // <125mm = green (100mm)
+        125, '#e74c3c', // 125-175mm = red (150mm)
+        175, '#3498db', // 175-225mm = blue (200mm)
+        225, '#e67e22', // 225-275mm = orange (250mm)
+        275, '#8e44ad', // 275-325mm = purple (300mm)
+        325, '#2c3e50', // 325mm+ = dark (350+)
+      ],
+    ];
+    const expr = colorMode === 'diameter' ? diameterColor : velocityColor;
+    if (map.getLayer('links-line')) map.setPaintProperty('links-line', 'line-color', expr);
+    if (map.getLayer('links-line-closed')) map.setPaintProperty('links-line-closed', 'line-color', expr);
+  }, [colorMode, mapReady]);
+
+  // --- Toggle pipe annotation labels ---
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    if (map.getLayer('link-labels')) {
+      const field: maplibregl.ExpressionSpecification = showPipeAnnotations
+        ? ['get', 'annotationLabel']
+        : ['concat', ['get', 'label'], '\n', ['get', 'flowLabel']];
+      map.setLayoutProperty('link-labels', 'text-field', field);
+    }
+  }, [showPipeAnnotations, mapReady]);
+
+  // --- Toggle flow direction arrows ---
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    if (map.getLayer('flow-arrows')) map.setLayoutProperty('flow-arrows', 'visibility', showFlowArrows ? 'visible' : 'none');
+  }, [showFlowArrows, mapReady]);
+
   // --- Cursor for placement tools ---
   useEffect(() => {
     const map = mapRef.current;
@@ -944,6 +1022,25 @@ export function MapCanvas() {
                   </button>
                   <div className="top-bar-dropdown-divider" />
                   <button className="top-bar-dropdown-item"
+                    data-active={colorMode === 'diameter' || undefined}
+                    onClick={() => setColorMode(m => m === 'velocity' ? 'diameter' : 'velocity')}>
+                    🎨 Color: {colorMode === 'velocity' ? 'Velocity' : 'Diameter'}
+                    <span className="top-bar-dropdown-item-desc">Toggle pipe coloring — {colorMode === 'velocity' ? 'by velocity status' : 'by pipe diameter'}</span>
+                  </button>
+                  <button className="top-bar-dropdown-item"
+                    data-active={showPipeAnnotations || undefined}
+                    onClick={() => setShowPipeAnnotations(v => !v)}>
+                    📐 Pipe Dimensions
+                    <span className="top-bar-dropdown-item-desc">{showPipeAnnotations ? 'Showing' : 'Hidden'} — length & diameter on pipes</span>
+                  </button>
+                  <button className="top-bar-dropdown-item"
+                    data-active={showFlowArrows || undefined}
+                    onClick={() => setShowFlowArrows(v => !v)}>
+                    ➡ Flow Arrows
+                    <span className="top-bar-dropdown-item-desc">{showFlowArrows ? 'Visible' : 'Hidden'} — flow direction on pipes</span>
+                  </button>
+                  <div className="top-bar-dropdown-divider" />
+                  <button className="top-bar-dropdown-item"
                     onClick={() => {
                       const map = mapRef.current;
                       if (!map) return;
@@ -988,7 +1085,7 @@ export function MapCanvas() {
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
 
       {/* Map legend */}
-      {showLegend && <MapLegend />}
+      {showLegend && <MapLegend colorMode={colorMode} />}
 
       {/* INP viewer — slide-up panel */}
       {showInp && lastInp && (
