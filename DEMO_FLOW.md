@@ -274,6 +274,70 @@ Open Soliton in the browser. Ayodhya network loads automatically with solved res
 
 ---
 
+## City Network Data — Sources & Methodology
+
+All four demo city networks are **synthetic but plausible** models built from publicly available data. They are not actual utility GIS exports — they are representative models designed to demonstrate realistic hydraulic behavior.
+
+### Data Sources Used
+
+| Data Type | Source |
+|-----------|--------|
+| City boundaries & road networks | OpenStreetMap, Census 2011 administrative boundaries |
+| WTP / source locations | AMRUT 2.0 DPRs (publicly filed), CPHEEO city infrastructure reports |
+| OHT / ESR locations | State Jal Nigam project reports, Smart Cities Mission documents |
+| Zone names & ward boundaries | Municipal corporation ward maps (publicly available) |
+| Population estimates | Census 2011 + projected growth rates from URDPFI guidelines |
+| Elevation data | SRTM 30m DEM (USGS) — used for node elevations |
+| Demand norms | CPHEEO Manual on Water Supply (2024 revision) |
+| Pipe cost rates | State SOR (Schedule of Rates) 2024 — UP/Odisha/Jharkhand/UP |
+| Design criteria | CPHEEO 2024, AMRUT 2.0 reform guidelines |
+
+### Per-City Details
+
+**Ayodhya (UP Jal Nigam, AMRUT 2.0)**
+- Source: Saryu River intake, 100 MLD WTP (north bank)
+- Tanks: OHT1 (central/temple area), OHT2 (south wards)
+- 33 junctions, 50 pipes across 11 wards
+- Coordinates centered on Ram Janmabhoomi area (26.79°N, 82.20°E)
+- High-demand zones: temple corridor, Saryu ghat areas
+- Intentionally deficient: far south-east periphery (F1-F3) — long runs, small pipes
+- 3 scenarios: full 11-ward, 4 selected DMAs, Saryu source Phase 1
+
+**Bhubaneswar (WATCO, AMRUT 2.0)**
+- Source: Kuakhai River, Palasuni WTP (130 MLD)
+- Tanks: ESR1 (Saheed Nagar commercial), ESR2 (Old Town/Lingaraj)
+- ~35 junctions in looped grid
+- Coordinates centered on Lingaraj Temple (20.30°N, 85.82°E)
+- High-demand: Saheed Nagar commercial, Old Town heritage
+- Intentionally deficient: Khandagiri hill zone (high elevation)
+- 3 scenarios: full city, WATCO Zone 1-3 core, Kuakhai Phase 1
+
+**Ranchi (Jharkhand, AMRUT 2.0)**
+- Source: Getalsud Dam / Rukka WTP (170 MLD, Subarnarekha River)
+- Tanks: ESR Doranda (central), ESR Kanke (north)
+- ~33 junctions across 9 zones
+- Chota Nagpur Plateau terrain: 580–700m elevation (significant variation)
+- High-demand: Lalpur commercial, Hindpiri old city
+- Intentionally deficient: Ratu Road (peripheral, high elevation)
+- 3 scenarios: full city, core 4 zones, Rukka Phase 1
+
+**Bareilly (Nagar Nigam, AMRUT 2.0)**
+- Source: Ramganga River WTP (north-west of city)
+- Tanks: OHT Central (Kutubkhana), OHT North (Izzat Nagar)
+- ~32 junctions across 8 zones
+- Indo-Gangetic plain: 165–180m elevation (minimal variation)
+- High-demand: Kutubkhana/Bada Bazaar old city, CB Ganj industrial
+- Intentionally deficient: Shahjahanpur Road (south peripheral)
+- 3 scenarios: full city, core zones, Ramganga Phase 1
+
+### What to say if asked about data accuracy
+
+> "These are representative models — not GIS exports from the utility. The network topology, source locations, tank positions, and elevation profiles are based on publicly available AMRUT 2.0 DPRs, Census data, and SRTM elevation data. The hydraulic results are real — EPANET solves the physics. But for an actual deployment, you would import your real GIS pipe data using our GIS import tool."
+>
+> "The point of these demos is to show the tool's capability with realistic Indian city parameters — CPHEEO standards, Indian population densities, actual elevation profiles, rupee-denominated pipe costs."
+
+---
+
 ## Backup Scenarios (if audience asks)
 
 ### "Show me a different city"
