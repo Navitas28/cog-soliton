@@ -202,14 +202,15 @@ export function MapCanvas() {
         },
       });
 
-      // Link labels
+      // Link labels — only show when zoomed in
       map.addLayer({
         id: 'link-labels', type: 'symbol', source: SRC_LABELS,
+        minzoom: 13,
         layout: {
           'text-field': ['concat', ['get', 'label'], '\n', ['get', 'flowLabel']],
           'text-size': 10,
           'text-offset': [0, -1],
-          'text-allow-overlap': true,
+          'text-allow-overlap': false,
         },
         paint: { 'text-color': '#555', 'text-halo-color': '#fff', 'text-halo-width': 1.5 },
       });
@@ -248,28 +249,30 @@ export function MapCanvas() {
         },
       });
 
-      // Node labels
+      // Node labels — show at moderate zoom
       map.addLayer({
         id: 'node-labels', type: 'symbol', source: SRC_NODES,
+        minzoom: 12,
         layout: {
           'text-field': ['get', 'id'],
           'text-size': 11,
           'text-offset': [0, -1.5],
-          'text-allow-overlap': true,
+          'text-allow-overlap': false,
           'text-font': ['Open Sans Semibold'],
         },
         paint: { 'text-color': '#333', 'text-halo-color': '#fff', 'text-halo-width': 1.5 },
       });
 
-      // Pressure labels for junctions with results
+      // Pressure labels — show when more zoomed in
       map.addLayer({
         id: 'pressure-labels', type: 'symbol', source: SRC_NODES,
+        minzoom: 13,
         filter: ['all', ['==', ['get', 'type'], 'junction'], ['boolean', ['get', 'hasResult'], false]],
         layout: {
           'text-field': ['concat', ['to-string', ['round', ['get', 'pressure']]], 'm'],
           'text-size': 10,
           'text-offset': [0, 1.5],
-          'text-allow-overlap': true,
+          'text-allow-overlap': false,
         },
         paint: {
           'text-color': ['case', ['boolean', ['get', 'passesPressure'], false], '#155724', '#721c24'],

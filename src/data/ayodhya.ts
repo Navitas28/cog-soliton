@@ -27,8 +27,20 @@ import { DEFAULT_DIURNAL_PATTERN } from '../model/demand';
 const AYODHYA_CENTER = { lat: 26.7922, lng: 82.1998 };
 
 // WTP location: north bank of Saryu, intake area
-const WTP_LAT = 26.8020;
-const WTP_LNG = 82.1900;
+const WTP_LAT = 26.8080;
+const WTP_LNG = 82.1750;
+
+// Spread factor — multiplies coordinate offsets from center for visual clarity
+// Real Ayodhya DMA would be ~2-3km across; we spread to ~6km for readability
+const SPREAD = 3.0;
+
+/** Scale a coordinate relative to Ayodhya center for visual spread */
+function sp(lng: number, lat: number): { x: number; y: number } {
+  return {
+    x: AYODHYA_CENTER.lng + (lng - AYODHYA_CENTER.lng) * SPREAD,
+    y: AYODHYA_CENTER.lat + (lat - AYODHYA_CENTER.lat) * SPREAD,
+  };
+}
 
 export type AyodhyaScenario = '11-wards' | '4-dmas' | 'saryu-phase1';
 
@@ -51,76 +63,73 @@ export function createAyodhyaNetwork(scenario: AyodhyaScenario = '11-wards'): Ne
   ];
 
   // ---- OVERHEAD TANKS ----
-  // Two tanks: one serving central/temple area, one serving south wards
   const tanks = [
     {
-      id: 'OHT1', x: 82.1960, y: 26.7950,
+      id: 'OHT1', ...sp(82.1960, 26.7950),
       elevation: 45, initLevel: 4, minLevel: 1, maxLevel: 8,
       diameter: 20, minVolume: 0,
     },
     {
-      id: 'OHT2', x: 82.2080, y: 26.7870,
+      id: 'OHT2', ...sp(82.2080, 26.7870),
       elevation: 42, initLevel: 3.5, minLevel: 1, maxLevel: 7,
       diameter: 16, minVolume: 0,
     },
   ];
 
   // ---- JUNCTIONS ----
-  // Grid layout with realistic Ayodhya coordinates
-  // High-demand zones: near temples and ghats
-  // Low-elevation peripheral wards: intentionally under-served for demo
+  // Coordinates spread 3x from center for visual clarity on map
 
   const junctions = [
     // Transmission nodes (between WTP and tanks)
-    { id: 'TN1', x: 82.1920, y: 26.7990, elevation: 38, baseDemand: 0.5, patternId: '1' },
-    { id: 'TN2', x: 82.1940, y: 26.7970, elevation: 36, baseDemand: 0.5, patternId: '1' },
+    { id: 'TN1', ...sp(82.1920, 26.7990), elevation: 38, baseDemand: 0.5, patternId: '1' },
+    { id: 'TN2', ...sp(82.1940, 26.7970), elevation: 36, baseDemand: 0.5, patternId: '1' },
 
     // Central zone — Ram Janmabhoomi / temple area (HIGH DEMAND)
-    { id: 'C1', x: 82.1985, y: 26.7930, elevation: 34, baseDemand: 8, patternId: '1' },
-    { id: 'C2', x: 82.2000, y: 26.7925, elevation: 33, baseDemand: 12, patternId: '1' }, // Temple zone peak
-    { id: 'C3', x: 82.2015, y: 26.7920, elevation: 33, baseDemand: 10, patternId: '1' },
-    { id: 'C4', x: 82.1990, y: 26.7910, elevation: 32, baseDemand: 7, patternId: '1' },
-    { id: 'C5', x: 82.2010, y: 26.7910, elevation: 32, baseDemand: 9, patternId: '1' },
-    { id: 'C6', x: 82.2025, y: 26.7915, elevation: 33, baseDemand: 6, patternId: '1' },
+    { id: 'C1', ...sp(82.1985, 26.7930), elevation: 34, baseDemand: 8, patternId: '1' },
+    { id: 'C2', ...sp(82.2000, 26.7925), elevation: 33, baseDemand: 12, patternId: '1' },
+    { id: 'C3', ...sp(82.2015, 26.7920), elevation: 33, baseDemand: 10, patternId: '1' },
+    { id: 'C4', ...sp(82.1990, 26.7910), elevation: 32, baseDemand: 7, patternId: '1' },
+    { id: 'C5', ...sp(82.2010, 26.7910), elevation: 32, baseDemand: 9, patternId: '1' },
+    { id: 'C6', ...sp(82.2025, 26.7915), elevation: 33, baseDemand: 6, patternId: '1' },
 
     // Ghat zone — Saryu riverfront (HIGH DEMAND, bathing ghats)
-    { id: 'G1', x: 82.1970, y: 26.7960, elevation: 30, baseDemand: 10, patternId: '1' },
-    { id: 'G2', x: 82.1990, y: 26.7955, elevation: 30, baseDemand: 8, patternId: '1' },
-    { id: 'G3', x: 82.2010, y: 26.7950, elevation: 31, baseDemand: 7, patternId: '1' },
-    { id: 'G4', x: 82.2030, y: 26.7945, elevation: 31, baseDemand: 6, patternId: '1' },
+    { id: 'G1', ...sp(82.1970, 26.7960), elevation: 30, baseDemand: 10, patternId: '1' },
+    { id: 'G2', ...sp(82.1990, 26.7955), elevation: 30, baseDemand: 8, patternId: '1' },
+    { id: 'G3', ...sp(82.2010, 26.7950), elevation: 31, baseDemand: 7, patternId: '1' },
+    { id: 'G4', ...sp(82.2030, 26.7945), elevation: 31, baseDemand: 6, patternId: '1' },
 
     // North residential
-    { id: 'N1', x: 82.1950, y: 26.7980, elevation: 36, baseDemand: 4, patternId: '1' },
-    { id: 'N2', x: 82.1970, y: 26.7980, elevation: 35, baseDemand: 5, patternId: '1' },
-    { id: 'N3', x: 82.1990, y: 26.7975, elevation: 34, baseDemand: 5, patternId: '1' },
-    { id: 'N4', x: 82.2010, y: 26.7975, elevation: 34, baseDemand: 4, patternId: '1' },
-    { id: 'N5', x: 82.2030, y: 26.7970, elevation: 35, baseDemand: 3, patternId: '1' },
+    { id: 'N1', ...sp(82.1950, 26.7980), elevation: 36, baseDemand: 4, patternId: '1' },
+    { id: 'N2', ...sp(82.1970, 26.7980), elevation: 35, baseDemand: 5, patternId: '1' },
+    { id: 'N3', ...sp(82.1990, 26.7975), elevation: 34, baseDemand: 5, patternId: '1' },
+    { id: 'N4', ...sp(82.2010, 26.7975), elevation: 34, baseDemand: 4, patternId: '1' },
+    { id: 'N5', ...sp(82.2030, 26.7970), elevation: 35, baseDemand: 3, patternId: '1' },
 
     // South wards — PERIPHERAL (intentionally under-served)
-    { id: 'S1', x: 82.1960, y: 26.7880, elevation: 30, baseDemand: 5, patternId: '1' },
-    { id: 'S2', x: 82.1980, y: 26.7875, elevation: 29, baseDemand: 6, patternId: '1' },
-    { id: 'S3', x: 82.2000, y: 26.7870, elevation: 29, baseDemand: 7, patternId: '1' },
-    { id: 'S4', x: 82.2020, y: 26.7865, elevation: 28, baseDemand: 5, patternId: '1' },
-    { id: 'S5', x: 82.2040, y: 26.7860, elevation: 28, baseDemand: 4, patternId: '1' },
+    { id: 'S1', ...sp(82.1960, 26.7880), elevation: 30, baseDemand: 5, patternId: '1' },
+    { id: 'S2', ...sp(82.1980, 26.7875), elevation: 29, baseDemand: 6, patternId: '1' },
+    { id: 'S3', ...sp(82.2000, 26.7870), elevation: 29, baseDemand: 7, patternId: '1' },
+    { id: 'S4', ...sp(82.2020, 26.7865), elevation: 28, baseDemand: 5, patternId: '1' },
+    { id: 'S5', ...sp(82.2040, 26.7860), elevation: 28, baseDemand: 4, patternId: '1' },
 
     // East residential
-    { id: 'E1', x: 82.2050, y: 26.7920, elevation: 34, baseDemand: 4, patternId: '1' },
-    { id: 'E2', x: 82.2060, y: 26.7900, elevation: 33, baseDemand: 5, patternId: '1' },
-    { id: 'E3', x: 82.2070, y: 26.7880, elevation: 32, baseDemand: 4, patternId: '1' },
+    { id: 'E1', ...sp(82.2050, 26.7920), elevation: 34, baseDemand: 4, patternId: '1' },
+    { id: 'E2', ...sp(82.2060, 26.7900), elevation: 33, baseDemand: 5, patternId: '1' },
+    { id: 'E3', ...sp(82.2070, 26.7880), elevation: 32, baseDemand: 4, patternId: '1' },
 
     // West residential
-    { id: 'W1', x: 82.1940, y: 26.7920, elevation: 34, baseDemand: 4, patternId: '1' },
-    { id: 'W2', x: 82.1930, y: 26.7900, elevation: 33, baseDemand: 5, patternId: '1' },
-    { id: 'W3', x: 82.1920, y: 26.7880, elevation: 32, baseDemand: 5, patternId: '1' },
+    { id: 'W1', ...sp(82.1940, 26.7920), elevation: 34, baseDemand: 4, patternId: '1' },
+    { id: 'W2', ...sp(82.1930, 26.7900), elevation: 33, baseDemand: 5, patternId: '1' },
+    { id: 'W3', ...sp(82.1920, 26.7880), elevation: 32, baseDemand: 5, patternId: '1' },
 
     // Far periphery — DEFICIENT ZONE (small pipes, high elevation)
-    { id: 'F1', x: 82.2080, y: 26.7840, elevation: 36, baseDemand: 6, patternId: '1' },
-    { id: 'F2', x: 82.2100, y: 26.7830, elevation: 38, baseDemand: 5, patternId: '1' },
-    { id: 'F3', x: 82.2120, y: 26.7820, elevation: 40, baseDemand: 4, patternId: '1' },
+    { id: 'F1', ...sp(82.2080, 26.7840), elevation: 36, baseDemand: 6, patternId: '1' },
+    { id: 'F2', ...sp(82.2100, 26.7830), elevation: 38, baseDemand: 5, patternId: '1' },
+    { id: 'F3', ...sp(82.2120, 26.7820), elevation: 40, baseDemand: 4, patternId: '1' },
 
     // South-west expansion
-    { id: 'SW1', x: 82.1910, y: 26.7860, elevation: 31, baseDemand: 3, patternId: '1' },
-    { id: 'SW2', x: 82.1900, y: 26.7840, elevation: 32, baseDemand: 3, patternId: '1' },
+    { id: 'SW1', ...sp(82.1910, 26.7860), elevation: 31, baseDemand: 3, patternId: '1' },
+    { id: 'SW2', ...sp(82.1900, 26.7840), elevation: 32, baseDemand: 3, patternId: '1' },
   ];
 
   // ---- PIPES ----
