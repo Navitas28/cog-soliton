@@ -8,6 +8,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { useNetworkStore } from '../store/networkStore';
 import { DemoLoader } from './DemoLoader';
 import { ExportPanel } from './ExportPanel';
+import { ScadaIndicator } from './ScadaPanel';
 import { buildNodeFeatures, buildLinkFeatures, buildLabelFeatures, offlineBlankStyle } from './mapHelpers';
 import { AYODHYA_OUTLINE } from '../data/ayodhyaOutline';
 import type { NodeResult, LinkResult } from '../engine/engine';
@@ -274,6 +275,19 @@ export function MapCanvas() {
         },
       });
 
+      // Monitored node ring — larger dashed circle for nodes with telemetry
+      map.addLayer({
+        id: 'monitored-ring', type: 'circle', source: SRC_NODES,
+        filter: ['boolean', ['get', 'monitored'], false],
+        paint: {
+          'circle-radius': 14,
+          'circle-color': 'transparent',
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#f39c12',
+          'circle-stroke-opacity': 0.8,
+        },
+      });
+
       setMapReady(true);
     });
 
@@ -281,6 +295,17 @@ export function MapCanvas() {
 
     return () => { map.remove(); mapRef.current = null; setMapReady(false); };
   }, []);
+
+  // Telemetry state for monitored node highlighting
+  const telemetryData = useNetworkStore(s => s.telemetryData);
+  const scadaReadings = useNetworkStore(s => s.scadaReadings);
+
+  // Build set of monitored node IDs
+  const monitoredNodeIds = new Set<string>();
+  if (telemetryData) {
+    for (const r of telemetryData.readings) monitoredNodeIds.add(r.nodeId);
+  }
+  for (const r of scadaReadings) monitoredNodeIds.add(r.nodeId);
 
   // --- Update GeoJSON sources when model/results/selection changes ---
   useEffect(() => {
@@ -291,10 +316,10 @@ export function MapCanvas() {
     const linkSrc = map.getSource(SRC_LINKS) as maplibregl.GeoJSONSource;
     const labelSrc = map.getSource(SRC_LABELS) as maplibregl.GeoJSONSource;
 
-    if (nodeSrc) nodeSrc.setData(buildNodeFeatures(model, getNodeResult, selectedId, pipeDrawingFrom, draggingNodeIdRef.current));
+    if (nodeSrc) nodeSrc.setData(buildNodeFeatures(model, getNodeResult, selectedId, pipeDrawingFrom, draggingNodeIdRef.current, monitoredNodeIds));
     if (linkSrc) linkSrc.setData(buildLinkFeatures(model, getLinkResult, selectedId));
     if (labelSrc) labelSrc.setData(buildLabelFeatures(model, getLinkResult));
-  }, [model, selectedId, pipeDrawingFrom, mapReady, getNodeResult, getLinkResult, solveResult, epsResult, epsTimeIndex]);
+  }, [model, selectedId, pipeDrawingFrom, mapReady, getNodeResult, getLinkResult, solveResult, epsResult, epsTimeIndex, telemetryData, scadaReadings]);
 
   // --- Fit to network on model load + toggle Ayodhya overlay ---
   useEffect(() => {
@@ -485,6 +510,7 @@ export function MapCanvas() {
         )}
 
         <ExportPanel />
+        <ScadaIndicator />
 
         {epsResult && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>

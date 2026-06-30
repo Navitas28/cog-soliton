@@ -11,6 +11,7 @@ export interface NodeFeatureProps {
   selected: boolean;
   highlighted: boolean;
   dragging: boolean;
+  monitored: boolean; // has telemetry reading
   // Result-derived
   hasResult: boolean;
   pressure: number;
@@ -36,6 +37,7 @@ export function buildNodeFeatures(
   selectedId: string | null,
   highlightedId: string | null,
   draggingId: string | null,
+  monitoredNodeIds?: Set<string>,
 ): GeoJSON.FeatureCollection<GeoJSON.Point, NodeFeatureProps> {
   const features: GeoJSON.Feature<GeoJSON.Point, NodeFeatureProps>[] = [];
   const pressureFloor = model.designCriteria.residualPressureFloor;
@@ -51,6 +53,7 @@ export function buildNodeFeatures(
         selected: id === selectedId,
         highlighted: id === highlightedId,
         dragging: id === draggingId,
+        monitored: monitoredNodeIds?.has(id) ?? false,
         hasResult: !!nr,
         pressure: nr?.pressure ?? 0,
         passesPressure: nr ? nr.pressure >= pressureFloor : false,

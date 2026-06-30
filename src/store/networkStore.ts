@@ -9,6 +9,7 @@ import { createEmptyNetwork } from '../model/types';
 import { serializeToInp } from '../model/serializer';
 import { solveSteadyState, solveEPS } from '../engine/engine';
 import type { SteadyStateResult, EPSResults, NodeResult, LinkResult } from '../engine/engine';
+import type { TelemetryReading, TelemetryDataset } from '../engine/telemetry';
 import { computePipeLength } from '../model/geodesic';
 
 export type DrawingTool = 'select' | 'reservoir' | 'junction' | 'pipe' | 'tank' | 'pump' | 'valve';
@@ -77,6 +78,15 @@ interface NetworkState {
   setShowResultsDashboard: (show: boolean) => void;
   setShowScenarioPanel: (show: boolean) => void;
 
+  // Telemetry / SCADA
+  telemetryData: TelemetryDataset | null;
+  scadaConnected: boolean;
+  scadaReadings: TelemetryReading[]; // live rolling buffer (last 100)
+  loadTelemetry: (data: TelemetryDataset) => void;
+  clearTelemetry: () => void;
+  setScadaConnected: (connected: boolean) => void;
+  addScadaReading: (reading: TelemetryReading) => void;
+
   // Derived helpers
   getNodeResultAtTime: (nodeId: string) => NodeResult | undefined;
   getLinkResultAtTime: (linkId: string) => LinkResult | undefined;
@@ -141,6 +151,9 @@ export const useNetworkStore = create<NetworkState>()(
   epsTimeIndex: 0,
   showResultsDashboard: false,
   showScenarioPanel: false,
+  telemetryData: null,
+  scadaConnected: false,
+  scadaReadings: [],
   nextId: { J: 1, R: 1, P: 1, T: 1, PU: 1, V: 1 },
 
   setActiveTool: (tool) => set({ activeTool: tool, pipeDrawingFrom: null }),
@@ -348,6 +361,14 @@ export const useNetworkStore = create<NetworkState>()(
 
   setShowResultsDashboard: (show) => set({ showResultsDashboard: show }),
   setShowScenarioPanel: (show) => set({ showScenarioPanel: show }),
+
+  // Telemetry / SCADA
+  loadTelemetry: (data) => set({ telemetryData: data }),
+  clearTelemetry: () => set({ telemetryData: null, scadaReadings: [] }),
+  setScadaConnected: (connected) => set({ scadaConnected: connected }),
+  addScadaReading: (reading) => set(state => ({
+    scadaReadings: [...state.scadaReadings.slice(-99), reading],
+  })),
 
   // EPS result helpers — get result at current time index
   getNodeResultAtTime: (nodeId) => {
