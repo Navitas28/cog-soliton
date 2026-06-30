@@ -34,6 +34,7 @@ interface NetworkState {
   epsTimeIndex: number; // index into epsResult.timestamps
 
   // View panels
+  activeView: 'design' | 'twin';
   showResultsDashboard: boolean;
   showScenarioPanel: boolean;
 
@@ -75,6 +76,7 @@ interface NetworkState {
   loadModel: (model: NetworkModel) => void;
   clearResults: () => void;
   setPipeDrawingFrom: (nodeId: string | null) => void;
+  setActiveView: (view: 'design' | 'twin') => void;
   setShowResultsDashboard: (show: boolean) => void;
   setShowScenarioPanel: (show: boolean) => void;
 
@@ -149,6 +151,7 @@ export const useNetworkStore = create<NetworkState>()(
   isSolving: false,
   lastInp: null,
   epsTimeIndex: 0,
+  activeView: 'design',
   showResultsDashboard: false,
   showScenarioPanel: false,
   telemetryData: null,
@@ -359,6 +362,7 @@ export const useNetworkStore = create<NetworkState>()(
 
   setPipeDrawingFrom: (nodeId) => set({ pipeDrawingFrom: nodeId }),
 
+  setActiveView: (view) => set({ activeView: view }),
   setShowResultsDashboard: (show) => set({ showResultsDashboard: show }),
   setShowScenarioPanel: (show) => set({ showScenarioPanel: show }),
 

@@ -512,6 +512,13 @@ export function MapCanvas() {
         <ExportPanel />
         <ScadaIndicator />
 
+        {hasResults && (
+          <button onClick={() => useNetworkStore.getState().setActiveView('twin')}
+            style={{ padding: '6px 12px', border: '1px solid #00bcd4', borderRadius: 4, background: '#00bcd4', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+            🌐 Digital Twin
+          </button>
+        )}
+
         {epsResult && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
             <span style={{ fontSize: 11, color: '#fff', background: 'rgba(0,0,0,0.5)', padding: '2px 8px', borderRadius: 3 }}>
