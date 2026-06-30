@@ -94,6 +94,21 @@ export function MapCanvas() {
         setPipeDrawingFrom(null);
         return;
       }
+
+      // Undo: Ctrl+Z / Cmd+Z
+      if (key === 'z' && (e.ctrlKey || e.metaKey) && !e.shiftKey) {
+        e.preventDefault();
+        (useNetworkStore as any).temporal.getState().undo();
+        return;
+      }
+
+      // Redo: Ctrl+Shift+Z / Cmd+Shift+Z or Ctrl+Y
+      if ((key === 'z' && (e.ctrlKey || e.metaKey) && e.shiftKey) ||
+          (key === 'y' && (e.ctrlKey || e.metaKey))) {
+        e.preventDefault();
+        (useNetworkStore as any).temporal.getState().redo();
+        return;
+      }
     };
 
     window.addEventListener('keydown', handler);

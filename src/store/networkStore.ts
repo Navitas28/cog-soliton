@@ -3,6 +3,7 @@
  * Single source of truth for the network, solver results, and UI state.
  */
 import { create } from 'zustand';
+import { temporal } from 'zundo';
 import type { NetworkModel, Junction, Reservoir, Pipe, Tank, Pump, Valve, DemandPattern, SimulationOptions, DesignCriteria } from '../model/types';
 import { createEmptyNetwork } from '../model/types';
 import { serializeToInp } from '../model/serializer';
@@ -124,7 +125,9 @@ function recalcNextIds(model: NetworkModel): { [prefix: string]: number } {
   return nextId;
 }
 
-export const useNetworkStore = create<NetworkState>((set, get) => ({
+export const useNetworkStore = create<NetworkState>()(
+  temporal(
+    (set, get) => ({
   model: createEmptyNetwork('Soliton Network'),
   activeTool: 'select',
   selectedElementId: null,
@@ -366,4 +369,11 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
     }
     return undefined;
   },
-}));
+}),
+    {
+      // Only track model changes for undo/redo — UI state excluded
+      partialize: (state) => ({ model: state.model }),
+      limit: 50,
+    },
+  ),
+);
