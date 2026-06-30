@@ -2,6 +2,7 @@
  * Demand Allocation Wizard — step-by-step demand assignment from external data.
  */
 import { useState, useCallback, useRef } from 'react';
+import { useFocusTrap } from './useFocusTrap';
 import { useNetworkStore } from '../store/networkStore';
 import {
   parseDemandCsv, allocateByPopulation, allocateByBilling,
@@ -13,6 +14,8 @@ type WizardStep = 'upload' | 'method' | 'preview' | 'done';
 type AllocMethod = 'population' | 'billing' | 'area';
 
 export function DemandWizard({ onClose }: { onClose: () => void }) {
+  const trapRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(trapRef, true);
   const model = useNetworkStore(s => s.model);
   const loadModel = useNetworkStore(s => s.loadModel);
 
@@ -92,7 +95,7 @@ export function DemandWizard({ onClose }: { onClose: () => void }) {
   const totalPopulation = records.reduce((s, r) => s + r.population, 0);
 
   return (
-    <div className="chart-modal-backdrop" onClick={onClose}>
+    <div ref={trapRef} className="chart-modal-backdrop" onClick={onClose}>
       <div className="import-dialog" onClick={e => e.stopPropagation()}>
         <div className="import-dialog-header">
           <div>

@@ -175,7 +175,7 @@ export function ExportPanel() {
 
   return (
     <div className="export-dropdown">
-      <button className="top-bar-btn" onClick={() => setOpen(!open)}>
+      <button className="top-bar-btn" onClick={() => setOpen(!open)} aria-label="Export" aria-expanded={open}>
         📥 Export {open ? '▴' : '▾'}
       </button>
       {open && (

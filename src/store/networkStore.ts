@@ -38,6 +38,7 @@ interface NetworkState {
   showResultsDashboard: boolean;
   showScenarioPanel: boolean;
   showPropertiesPanel: boolean;
+  hasSeenScenarioPanel: boolean;
 
   // ID counters
   nextId: { [prefix: string]: number };
@@ -83,6 +84,7 @@ interface NetworkState {
   setActiveView: (view: 'design' | 'twin') => void;
   setShowResultsDashboard: (show: boolean) => void;
   setShowScenarioPanel: (show: boolean) => void;
+  markScenarioPanelSeen: () => void;
   setShowPropertiesPanel: (show: boolean) => void;
 
   // Telemetry / SCADA
@@ -160,6 +162,7 @@ export const useNetworkStore = create<NetworkState>()(
   showResultsDashboard: false,
   showScenarioPanel: false,
   showPropertiesPanel: true,
+  hasSeenScenarioPanel: typeof localStorage !== 'undefined' && localStorage.getItem('soliton-scenario-seen') === 'true',
   telemetryData: null,
   scadaConnected: false,
   scadaReadings: [],
@@ -416,6 +419,10 @@ export const useNetworkStore = create<NetworkState>()(
   setActiveView: (view) => set({ activeView: view }),
   setShowResultsDashboard: (show) => set({ showResultsDashboard: show }),
   setShowScenarioPanel: (show) => set({ showScenarioPanel: show }),
+  markScenarioPanelSeen: () => {
+    localStorage.setItem('soliton-scenario-seen', 'true');
+    set({ hasSeenScenarioPanel: true });
+  },
   setShowPropertiesPanel: (show) => set({ showPropertiesPanel: show }),
 
   // Telemetry / SCADA

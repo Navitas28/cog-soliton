@@ -46,6 +46,7 @@ function App() {
                   className="panel-toggle-btn"
                   onClick={() => setShowPropertiesPanel(!showPropertiesPanel)}
                   title={showPropertiesPanel ? 'Collapse panel' : 'Expand panel'}
+                  aria-label={showPropertiesPanel ? 'Collapse properties panel' : 'Expand properties panel'}
                 >
                   {showPropertiesPanel ? '›' : '‹'}
                 </button>

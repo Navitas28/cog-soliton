@@ -1,7 +1,8 @@
 /**
  * Multi-scenario comparison dashboard — side-by-side metrics for saved scenarios.
  */
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { useFocusTrap } from './useFocusTrap';
 import { loadScenarios, type SavedScenario } from '../store/scenarioStore';
 import { serializeToInp } from '../model/serializer';
 import { solveSteadyState } from '../engine/engine';
@@ -25,6 +26,8 @@ interface ScenarioMetrics {
 }
 
 export function ComparisonDashboard({ onClose }: { onClose: () => void }) {
+  const trapRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(trapRef, true);
   const [scenarios] = useState(() => loadScenarios());
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [metrics, setMetrics] = useState<ScenarioMetrics[]>([]);
@@ -111,7 +114,7 @@ export function ComparisonDashboard({ onClose }: { onClose: () => void }) {
   const bestPressure = metrics.length > 0 ? Math.max(...metrics.map(m => m.pressureTotal > 0 ? m.pressurePassing / m.pressureTotal : 0)) : 0;
 
   return (
-    <div className="shortcut-overlay-backdrop" onClick={onClose}>
+    <div ref={trapRef} className="shortcut-overlay-backdrop" onClick={onClose}>
       <div className="comparison-dashboard" onClick={e => e.stopPropagation()}>
         <div className="shortcut-overlay-header">
           <span style={{ fontWeight: 700, fontSize: 15 }}>Scenario Comparison</span>

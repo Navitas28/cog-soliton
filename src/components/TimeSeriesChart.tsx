@@ -4,6 +4,7 @@
  * Supports multi-node overlay comparison.
  */
 import { useCallback, useRef, useState } from 'react';
+import { useFocusTrap } from './useFocusTrap';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine,
   ResponsiveContainer, Area, AreaChart, Legend,
@@ -104,6 +105,8 @@ export function TimeSeriesModal({ config, onClose, compareIds = [] }: TimeSeries
   const epsResult = useNetworkStore(s => s.epsResult);
   const designCriteria = useNetworkStore(s => s.model.designCriteria);
   const chartRef = useRef<HTMLDivElement>(null);
+  const trapRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(trapRef, true);
   const [selectedParam, setSelectedParam] = useState<string>(config.param);
 
   // Build series for primary element
@@ -199,7 +202,7 @@ export function TimeSeriesModal({ config, onClose, compareIds = [] }: TimeSeries
 
   if (!epsResult) {
     return (
-      <div className="chart-modal-backdrop" onClick={onClose}>
+      <div ref={trapRef} className="chart-modal-backdrop" onClick={onClose}>
         <div className="chart-modal" onClick={e => e.stopPropagation()}>
           <div className="chart-modal-header">
             <h3>Time Series — {config.elementId}</h3>
@@ -215,7 +218,7 @@ export function TimeSeriesModal({ config, onClose, compareIds = [] }: TimeSeries
   }
 
   return (
-    <div className="chart-modal-backdrop" onClick={onClose}>
+    <div ref={trapRef} className="chart-modal-backdrop" onClick={onClose}>
       <div className="chart-modal" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="chart-modal-header">

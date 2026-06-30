@@ -34,7 +34,7 @@ export function Toolbar() {
   };
 
   return (
-    <div className="tool-rail">
+    <div className="tool-rail" role="navigation" aria-label="Drawing tools">
       {/* Logo */}
       <div style={{
         width: 36, height: 36, borderRadius: 8,
@@ -56,6 +56,7 @@ export function Toolbar() {
           className={`tool-btn ${activeTool === t.id ? 'active' : ''}`}
           onClick={() => setActiveTool(t.id)}
           data-tooltip={`${t.label} (${t.shortcut})`}
+          aria-label={`${t.label} (${t.shortcut})`}
         >
           {t.icon}
         </button>
@@ -71,6 +72,7 @@ export function Toolbar() {
           className={`tool-btn ${activeTool === t.id ? 'active' : ''}`}
           onClick={() => setActiveTool(t.id)}
           data-tooltip={`${t.label} (${t.shortcut})`}
+          aria-label={`${t.label} (${t.shortcut})`}
         >
           {t.icon}
         </button>
@@ -83,6 +85,7 @@ export function Toolbar() {
         className="tool-btn"
         onClick={() => setShowImport(true)}
         data-tooltip="Import GeoJSON (I)"
+        aria-label="Import GeoJSON (I)"
         style={{ fontSize: 14 }}
       >
         &#8681;
@@ -92,7 +95,7 @@ export function Toolbar() {
       <UndoRedoBadge />
 
       <div style={{ flex: 1 }} />
-      <button className="tool-btn" onClick={toggleDark} data-tooltip="Toggle dark mode">
+      <button className="tool-btn" onClick={toggleDark} data-tooltip="Toggle dark mode" aria-label="Toggle dark mode">
         {isDark ? '\u2600' : '\uD83C\uDF19'}
       </button>
       <div style={{ fontSize: 8, color: 'var(--text-muted)', writingMode: 'vertical-rl', transform: 'rotate(180deg)', letterSpacing: 1 }}>

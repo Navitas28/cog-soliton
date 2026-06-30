@@ -3,6 +3,7 @@
  * visualize with scatter plot and stats.
  */
 import { useState, useCallback, useRef } from 'react';
+import { useFocusTrap } from './useFocusTrap';
 import {
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine,
@@ -14,6 +15,8 @@ import {
 } from '../engine/calibration';
 
 export function CalibrationPanel({ onClose }: { onClose: () => void }) {
+  const trapRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(trapRef, true);
   const solveResult = useNetworkStore(s => s.solveResult);
   const epsResult = useNetworkStore(s => s.epsResult);
   const epsTimeIndex = useNetworkStore(s => s.epsTimeIndex);
@@ -90,7 +93,7 @@ export function CalibrationPanel({ onClose }: { onClose: () => void }) {
   const maxVal = allValues.length > 0 ? Math.max(...allValues) + 2 : 50;
 
   return (
-    <div className="chart-modal-backdrop" onClick={onClose}>
+    <div ref={trapRef} className="chart-modal-backdrop" onClick={onClose}>
       <div className="chart-modal" onClick={e => e.stopPropagation()}>
         <div className="chart-modal-header">
           <div>

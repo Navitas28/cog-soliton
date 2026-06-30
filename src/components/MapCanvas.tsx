@@ -19,6 +19,8 @@ import { ZonePanel } from './ZonePanel';
 import { CriticalityPanel } from './CriticalityPanel';
 import { DemandWizard } from './DemandWizard';
 import { SearchBox } from './SearchBox';
+import { WorkflowStepper } from './WorkflowStepper';
+import { CommandPalette } from './CommandPalette';
 import { CostPanel } from './CostPanel';
 import { OptimizerPanel } from './OptimizerPanel';
 import { loadNetworkIcons } from './mapIcons';
@@ -75,6 +77,7 @@ export function MapCanvas() {
   const showResultsDashboard = useNetworkStore(s => s.showResultsDashboard);
   const setShowScenarioPanel = useNetworkStore(s => s.setShowScenarioPanel);
   const showScenarioPanel = useNetworkStore(s => s.showScenarioPanel);
+  const hasSeenScenarioPanel = useNetworkStore(s => s.hasSeenScenarioPanel);
   const setEpsTimeIndex = useNetworkStore(s => s.setEpsTimeIndex);
 
   const [showInp, setShowInp] = useState(false);
@@ -89,6 +92,11 @@ export function MapCanvas() {
   const [showZones, setShowZones] = useState(false);
   const [showCriticality, setShowCriticality] = useState(false);
   const [showDemandWizard, setShowDemandWizard] = useState(false);
+  const [showNodeLabels, setShowNodeLabels] = useState(true);
+  const [showPressureLabels, setShowPressureLabels] = useState(true);
+  const [showFlowLabels, setShowFlowLabels] = useState(true);
+  const [showLegend, setShowLegend] = useState(true);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const toggleDropdown = (name: string) => setOpenDropdown(prev => prev === name ? null : name);
 
@@ -116,6 +124,13 @@ export function MapCanvas() {
   // --- Keyboard shortcuts ---
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      // Command palette: Cmd+K / Ctrl+K (works even in inputs)
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setShowCommandPalette(v => !v);
+        return;
+      }
+
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
 
@@ -142,6 +157,16 @@ export function MapCanvas() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [selectedId, selectedType, setActiveTool, deleteElement, selectElement, setPipeDrawingFrom]);
+
+  // --- Auto-show Scenario Panel on first use ---
+  useEffect(() => {
+    if (hasSeenScenarioPanel) return;
+    const { junctions, reservoirs, tanks, pipes, pumps, valves } = model;
+    const total = junctions.length + reservoirs.length + tanks.length + pipes.length + pumps.length + valves.length;
+    if (total < 5) {
+      setShowScenarioPanel(true);
+    }
+  }, [hasSeenScenarioPanel, model, setShowScenarioPanel]);
 
   // --- Initialize MapLibre ---
   useEffect(() => {
@@ -701,6 +726,15 @@ export function MapCanvas() {
     return () => window.removeEventListener('soliton-theme-change', handler);
   }, [mapReady, isSatellite]);
 
+  // --- Toggle map label layers ---
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    if (map.getLayer('node-labels')) map.setLayoutProperty('node-labels', 'visibility', showNodeLabels ? 'visible' : 'none');
+    if (map.getLayer('pressure-labels')) map.setLayoutProperty('pressure-labels', 'visibility', showPressureLabels ? 'visible' : 'none');
+    if (map.getLayer('link-labels')) map.setLayoutProperty('link-labels', 'visibility', showFlowLabels ? 'visible' : 'none');
+  }, [showNodeLabels, showPressureLabels, showFlowLabels, mapReady]);
+
   // --- Cursor for placement tools ---
   useEffect(() => {
     const map = mapRef.current;
@@ -718,12 +752,13 @@ export function MapCanvas() {
     : compliancePct >= 70 ? 'status-badge--warn' : 'status-badge--fail';
 
   return (
-    <div className="map-container">
+    <div className="map-container" role="main" aria-label="Network map">
       {/* Top bar — grouped with progressive disclosure */}
       <div className="top-bar">
+        <WorkflowStepper />
         <div className="top-bar-row">
           {/* LEFT: Primary actions */}
-          <button className="compute-btn" onClick={() => solve()} disabled={isSolving}>
+          <button className="compute-btn" onClick={() => solve()} disabled={isSolving} aria-label="Compute hydraulic analysis">
             {isSolving ? '⏳ Solving…' : '▶ Compute'}
           </button>
           <DemoLoader />
@@ -733,7 +768,8 @@ export function MapCanvas() {
           {/* Settings dropdown */}
           <div className="top-bar-dropdown">
             <button className="top-bar-btn" onClick={() => toggleDropdown('settings')}
-              data-active={openDropdown === 'settings' || showScenarioPanel || undefined}>
+              data-active={openDropdown === 'settings' || showScenarioPanel || undefined}
+              aria-label="Settings" aria-expanded={openDropdown === 'settings'}>
               ⚙ Settings {openDropdown === 'settings' ? '▴' : '▾'}
             </button>
             {openDropdown === 'settings' && (
@@ -754,22 +790,24 @@ export function MapCanvas() {
           {/* CENTER: Status badge */}
           <div className="top-bar-spacer" />
           {hasResults && pressureStats && velocityStats && (
-            <span className={`status-badge-inline ${badgeClass}`}>
-              P: {pressureStats.passing}/{pressureStats.total} ({compliancePct.toFixed(0)}%)
-              &nbsp;·&nbsp;
-              V: {velocityStats.passing}/{velocityStats.total}
-              &nbsp;·&nbsp;
-              {model.options.duration > 0 ? 'EPS' : 'SS'}
+            <span className={`status-badge-inline ${badgeClass}`} role="status" aria-live="polite">
+              Pressure {pressureStats.passing}/{pressureStats.total}
+              <span className="status-badge-pct"> ({compliancePct.toFixed(0)}%)</span>
+              <span className="status-badge-sep" />
+              Velocity {velocityStats.passing}/{velocityStats.total}
+              <span className="status-badge-sep" />
+              {model.options.duration > 0 ? 'EPS' : 'Steady'}
             </span>
           )}
           {epsResult && (
-            <>
-              <span className="eps-time-badge" style={{ marginLeft: 6 }}>
+            <div className="eps-time-control">
+              <span className="eps-time-badge">
                 {formatTime(epsResult.timestamps[epsTimeIndex])}
               </span>
               <input type="range" className="eps-time-slider" min={0} max={epsResult.timestamps.length - 1}
-                value={epsTimeIndex} onChange={e => setEpsTimeIndex(parseInt(e.target.value))} />
-            </>
+                value={epsTimeIndex} onChange={e => setEpsTimeIndex(parseInt(e.target.value))}
+                aria-label="EPS time step" />
+            </div>
           )}
           <div className="top-bar-spacer" />
 
@@ -777,7 +815,7 @@ export function MapCanvas() {
           {showSearch ? (
             <SearchBox mapRef={mapRef} onClose={() => setShowSearch(false)} />
           ) : (
-            <button className="top-bar-btn" onClick={() => setShowSearch(true)} title="Search (/)">
+            <button className="top-bar-btn" onClick={() => setShowSearch(true)} title="Search (/)" aria-label="Search (/)">
               🔍
             </button>
           )}
@@ -785,61 +823,73 @@ export function MapCanvas() {
           {/* Analysis dropdown */}
           <div className="top-bar-dropdown">
             <button className="top-bar-btn" onClick={() => toggleDropdown('analysis')}
-              data-active={openDropdown === 'analysis' || showResultsDashboard || showCost || undefined}>
+              data-active={openDropdown === 'analysis' || showResultsDashboard || showCost || undefined}
+              aria-label="Analysis" aria-expanded={openDropdown === 'analysis'}>
               Analysis {openDropdown === 'analysis' ? '▴' : '▾'}
             </button>
             {openDropdown === 'analysis' && (
               <>
                 <div className="top-bar-dropdown-backdrop" onClick={() => setOpenDropdown(null)} />
-                <div className="top-bar-dropdown-menu">
+                <div className="top-bar-dropdown-menu top-bar-dropdown-menu--wide">
                   <button className="top-bar-dropdown-item"
                     data-active={showResultsDashboard || undefined}
                     onClick={() => { setShowResultsDashboard(!showResultsDashboard); setOpenDropdown(null); }}>
                     📊 Results Dashboard
+                    <span className="top-bar-dropdown-item-desc">Pressure, velocity, and demand tables</span>
                   </button>
                   <button className="top-bar-dropdown-item"
                     data-active={showCost || undefined}
                     onClick={() => { setShowCost(!showCost); setOpenDropdown(null); }}>
                     💰 Cost Estimate
+                    <span className="top-bar-dropdown-item-desc">Pipe and infrastructure costs</span>
                   </button>
                   <button className="top-bar-dropdown-item"
                     onClick={() => { setShowDemandWizard(true); setOpenDropdown(null); }}>
                     📊 Demand Allocation
+                    <span className="top-bar-dropdown-item-desc">Assign demands from census/billing data</span>
                   </button>
                   <div className="top-bar-dropdown-divider" />
                   <button className="top-bar-dropdown-item"
                     onClick={() => { setShowOptimizer(true); setOpenDropdown(null); }}>
                     ⚡ Optimize Pipes
+                    <span className="top-bar-dropdown-item-desc">Auto-size pipes to minimize cost</span>
                   </button>
                   <button className="top-bar-dropdown-item"
                     onClick={() => { setShowComparison(true); setOpenDropdown(null); }}>
                     📊 Compare Scenarios
+                    <span className="top-bar-dropdown-item-desc">Side-by-side scenario comparison</span>
                   </button>
-                  {hasResults && (
-                    <>
-                      <div className="top-bar-dropdown-divider" />
-                      <button className="top-bar-dropdown-item"
-                        onClick={() => { setShowFireFlow(true); setOpenDropdown(null); }}>
-                        🔥 Fire Flow Analysis
-                      </button>
-                      <button className="top-bar-dropdown-item"
-                        onClick={() => { setShowCriticality(true); setOpenDropdown(null); }}>
-                        ⚠ Criticality (N-1)
-                      </button>
-                      <button className="top-bar-dropdown-item"
-                        onClick={() => { setShowZones(true); setOpenDropdown(null); }}>
-                        🗺 DMA / Zones
-                      </button>
-                      <button className="top-bar-dropdown-item"
-                        onClick={() => { setShowCalibration(true); setOpenDropdown(null); }}>
-                        🎯 Calibrate (Field Data)
-                      </button>
-                      <button className="top-bar-dropdown-item"
-                        onClick={() => { useNetworkStore.getState().setActiveView('twin'); setOpenDropdown(null); }}>
-                        🌐 Digital Twin
-                      </button>
-                    </>
-                  )}
+                  <div className="top-bar-dropdown-divider" />
+                  <button className="top-bar-dropdown-item"
+                    aria-disabled={!hasResults || undefined}
+                    onClick={() => { if (hasResults) { setShowFireFlow(true); setOpenDropdown(null); } }}>
+                    🔥 Fire Flow Analysis
+                    <span className="top-bar-dropdown-item-desc">{hasResults ? 'Test hydrant adequacy at each junction' : 'Requires results — run Compute first'}</span>
+                  </button>
+                  <button className="top-bar-dropdown-item"
+                    aria-disabled={!hasResults || undefined}
+                    onClick={() => { if (hasResults) { setShowCriticality(true); setOpenDropdown(null); } }}>
+                    ⚠ Criticality (N-1)
+                    <span className="top-bar-dropdown-item-desc">{hasResults ? 'Identify single points of failure' : 'Requires results — run Compute first'}</span>
+                  </button>
+                  <button className="top-bar-dropdown-item"
+                    aria-disabled={!hasResults || undefined}
+                    onClick={() => { if (hasResults) { setShowZones(true); setOpenDropdown(null); } }}>
+                    🗺 DMA / Zones
+                    <span className="top-bar-dropdown-item-desc">{hasResults ? 'District metering area boundaries' : 'Requires results — run Compute first'}</span>
+                  </button>
+                  <button className="top-bar-dropdown-item"
+                    aria-disabled={!hasResults || undefined}
+                    onClick={() => { if (hasResults) { setShowCalibration(true); setOpenDropdown(null); } }}>
+                    🎯 Calibrate (Field Data)
+                    <span className="top-bar-dropdown-item-desc">{hasResults ? 'Compare model vs field measurements' : 'Requires results — run Compute first'}</span>
+                  </button>
+                  <button className="top-bar-dropdown-item"
+                    aria-disabled={!hasResults || undefined}
+                    onClick={() => { if (hasResults) { useNetworkStore.getState().setActiveView('twin'); setOpenDropdown(null); } }}>
+                    🌐 Digital Twin
+                    <span className="top-bar-dropdown-item-desc">{hasResults ? 'Live monitoring satellite view' : 'Requires results — run Compute first'}</span>
+                  </button>
                 </div>
               </>
             )}
@@ -847,22 +897,69 @@ export function MapCanvas() {
 
           {/* View dropdown */}
           <div className="top-bar-dropdown">
-            <button className="top-bar-btn" onClick={() => toggleDropdown('view')}>
+            <button className="top-bar-btn" onClick={() => toggleDropdown('view')}
+              aria-label="View" aria-expanded={openDropdown === 'view'}>
               View {openDropdown === 'view' ? '▴' : '▾'}
             </button>
             {openDropdown === 'view' && (
               <>
                 <div className="top-bar-dropdown-backdrop" onClick={() => setOpenDropdown(null)} />
-                <div className="top-bar-dropdown-menu">
+                <div className="top-bar-dropdown-menu top-bar-dropdown-menu--wide" style={{ right: 0, left: 'auto' }}>
                   <button className="top-bar-dropdown-item"
                     data-active={isSatellite || undefined}
                     onClick={() => { setIsSatellite(!isSatellite); setOpenDropdown(null); }}>
                     🛰 {isSatellite ? 'Switch to Street' : 'Switch to Satellite'}
+                    <span className="top-bar-dropdown-item-desc">Toggle basemap style</span>
+                  </button>
+                  <div className="top-bar-dropdown-divider" />
+                  <button className="top-bar-dropdown-item"
+                    data-active={showNodeLabels || undefined}
+                    onClick={() => setShowNodeLabels(v => !v)}>
+                    🏷 Node Labels
+                    <span className="top-bar-dropdown-item-desc">{showNodeLabels ? 'Visible' : 'Hidden'} — node IDs on map</span>
+                  </button>
+                  <button className="top-bar-dropdown-item"
+                    data-active={showPressureLabels || undefined}
+                    onClick={() => setShowPressureLabels(v => !v)}>
+                    💧 Pressure Labels
+                    <span className="top-bar-dropdown-item-desc">{showPressureLabels ? 'Visible' : 'Hidden'} — pressure values at junctions</span>
+                  </button>
+                  <button className="top-bar-dropdown-item"
+                    data-active={showFlowLabels || undefined}
+                    onClick={() => setShowFlowLabels(v => !v)}>
+                    🌊 Flow Labels
+                    <span className="top-bar-dropdown-item-desc">{showFlowLabels ? 'Visible' : 'Hidden'} — flow values on pipes</span>
+                  </button>
+                  <button className="top-bar-dropdown-item"
+                    data-active={showLegend || undefined}
+                    onClick={() => setShowLegend(v => !v)}>
+                    🎨 Legend
+                    <span className="top-bar-dropdown-item-desc">{showLegend ? 'Visible' : 'Hidden'} — color key overlay</span>
+                  </button>
+                  <div className="top-bar-dropdown-divider" />
+                  <button className="top-bar-dropdown-item"
+                    onClick={() => {
+                      const map = mapRef.current;
+                      if (!map) return;
+                      const allNodes = [...model.junctions, ...model.reservoirs, ...model.tanks];
+                      if (allNodes.length === 0) return;
+                      const lngs = allNodes.map(n => n.x);
+                      const lats = allNodes.map(n => n.y);
+                      map.fitBounds(
+                        [[Math.min(...lngs) - 0.002, Math.min(...lats) - 0.002],
+                         [Math.max(...lngs) + 0.002, Math.max(...lats) + 0.002]],
+                        { padding: 60, duration: 800 }
+                      );
+                      setOpenDropdown(null);
+                    }}>
+                    🔍 Zoom to Network
+                    <span className="top-bar-dropdown-item-desc">Fit map to show all elements</span>
                   </button>
                   <button className="top-bar-dropdown-item"
                     data-active={showInp || undefined}
                     onClick={() => { setShowInp(!showInp); setOpenDropdown(null); }}>
                     📄 INP Viewer
+                    <span className="top-bar-dropdown-item-desc">View generated EPANET input file</span>
                   </button>
                 </div>
               </>
@@ -875,7 +972,7 @@ export function MapCanvas() {
 
       {/* Toast error notification */}
       {solveError && (
-        <div className="toast-error">
+        <div className="toast-error" role="alert" aria-live="assertive">
           <span className="toast-error-icon">!</span>
           <span className="toast-error-text" title={solveError}>{solveError}</span>
           <button className="toast-error-close" onClick={() => useNetworkStore.getState().clearResults()}>×</button>
@@ -885,7 +982,7 @@ export function MapCanvas() {
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
 
       {/* Map legend */}
-      <MapLegend />
+      {showLegend && <MapLegend />}
 
       {/* INP viewer — slide-up panel */}
       {showInp && lastInp && (
@@ -901,12 +998,7 @@ export function MapCanvas() {
         </div>
       )}
 
-      {/* INP toggle button (bottom bar) */}
-      {lastInp && !showInp && (
-        <button className="inp-toggle-btn" onClick={() => setShowInp(true)}>
-          INP
-        </button>
-      )}
+      {/* INP toggle button removed — accessible via View > INP Viewer */}
 
       {/* Drawing guide */}
       {(activeTool === 'pipe' || activeTool === 'pump' || activeTool === 'valve') && pipeDrawingFrom && (
@@ -938,6 +1030,8 @@ export function MapCanvas() {
 
       {/* Shortcut overlay */}
       {showShortcuts && <ShortcutOverlay onClose={() => setShowShortcuts(false)} />}
+
+      {showCommandPalette && <CommandPalette onClose={() => setShowCommandPalette(false)} />}
     </div>
   );
 }

@@ -18,21 +18,18 @@ export function ScadaIndicator() {
   return (
     <>
       <button
+        className="top-bar-dropdown-item"
         onClick={() => setShowPanel(!showPanel)}
-        style={{
-          padding: '4px 10px', border: '1px solid #666', borderRadius: 4,
-          background: connected ? '#27ae60' : '#555',
-          color: '#fff', cursor: 'pointer', fontSize: 11,
-          display: 'flex', alignItems: 'center', gap: 4,
-        }}
+        style={{ display: 'flex', alignItems: 'center', gap: 6 }}
         title={connected ? `SCADA connected (${readingsCount} readings)` : 'SCADA disconnected'}
       >
         <span style={{
           width: 8, height: 8, borderRadius: '50%',
-          background: connected ? '#fff' : '#999',
+          background: connected ? '#27ae60' : '#ccc',
           display: 'inline-block',
+          flexShrink: 0,
         }} />
-        SCADA
+        SCADA {connected ? `(${readingsCount})` : ''}
       </button>
       {showPanel && <ScadaPanel onClose={() => setShowPanel(false)} />}
     </>

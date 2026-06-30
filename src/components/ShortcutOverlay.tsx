@@ -1,6 +1,8 @@
 /**
  * Keyboard shortcut overlay — press ? to toggle.
  */
+import { useRef } from 'react';
+import { useFocusTrap } from './useFocusTrap';
 
 interface ShortcutOverlayProps {
   onClose: () => void;
@@ -23,8 +25,10 @@ const SHORTCUTS = [
 ];
 
 export function ShortcutOverlay({ onClose }: ShortcutOverlayProps) {
+  const trapRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(trapRef, true);
   return (
-    <div className="shortcut-overlay-backdrop" onClick={onClose}>
+    <div ref={trapRef} className="shortcut-overlay-backdrop" onClick={onClose}>
       <div className="shortcut-overlay" onClick={e => e.stopPropagation()}>
         <div className="shortcut-overlay-header">
           <span style={{ fontWeight: 700, fontSize: 15 }}>Keyboard Shortcuts</span>

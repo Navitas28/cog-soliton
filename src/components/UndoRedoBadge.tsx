@@ -19,6 +19,7 @@ export function UndoRedoBadge() {
         disabled={pastLen === 0}
         onClick={undo}
         title={`Undo (${pastLen})`}
+        aria-label={`Undo (${pastLen})`}
       >
         ↩ <span className="undo-redo-count">{pastLen}</span>
       </button>
@@ -27,6 +28,7 @@ export function UndoRedoBadge() {
         disabled={futureLen === 0}
         onClick={redo}
         title={`Redo (${futureLen})`}
+        aria-label={`Redo (${futureLen})`}
       >
         ↪ <span className="undo-redo-count">{futureLen}</span>
       </button>

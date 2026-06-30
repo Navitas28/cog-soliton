@@ -1,0 +1,57 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [82.1998, 26.7922] },
+      "properties": { "id": "R1", "type": "reservoir", "head": 50 }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [82.2025, 26.7935] },
+      "properties": { "id": "J1", "elevation": 30, "demand": 0.05 }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [82.2050, 26.7920] },
+      "properties": { "id": "J2", "elevation": 28, "demand": 0.08 }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [82.2040, 26.7950] },
+      "properties": { "id": "J3", "elevation": 32, "demand": 0.06 }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[82.1998, 26.7922], [82.2025, 26.7935]]
+      },
+      "properties": { "id": "P1", "diameter": 200 }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[82.2025, 26.7935], [82.2050, 26.7920]]
+      },
+      "properties": { "id": "P2", "diameter": 150 }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[82.2025, 26.7935], [82.2040, 26.7950]]
+      },
+      "properties": { "id": "P3", "diameter": 150 }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[82.2050, 26.7920], [82.2040, 26.7950]]
+      },
+      "properties": { "id": "P4", "diameter": 100 }
+    }
+  ]
+}

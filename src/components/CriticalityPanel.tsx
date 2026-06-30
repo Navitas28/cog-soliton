@@ -1,7 +1,8 @@
 /**
  * Criticality Panel — bulk pipe-break analysis with resilience score.
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import { useFocusTrap } from './useFocusTrap';
 import { useNetworkStore } from '../store/networkStore';
 import { serializeToInp } from '../model/serializer';
 import {
@@ -10,6 +11,8 @@ import {
 } from '../engine/criticality';
 
 export function CriticalityPanel({ onClose }: { onClose: () => void }) {
+  const trapRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(trapRef, true);
   const model = useNetworkStore(s => s.model);
   const solveResult = useNetworkStore(s => s.solveResult);
   const epsResult = useNetworkStore(s => s.epsResult);
@@ -59,7 +62,7 @@ export function CriticalityPanel({ onClose }: { onClose: () => void }) {
   }, [model, getBaselinePressures]);
 
   return (
-    <div className="chart-modal-backdrop" onClick={onClose}>
+    <div ref={trapRef} className="chart-modal-backdrop" onClick={onClose}>
       <div className="chart-modal" onClick={e => e.stopPropagation()}>
         <div className="chart-modal-header">
           <div>

@@ -57,88 +57,99 @@ export function PropertiesPanel() {
       }
     }
 
+    const pressurePct = model.junctions.length > 0 ? (pressurePassing / model.junctions.length * 100).toFixed(0) : '0';
+
     return (
-      <div className="properties-panel">
+      <div className="properties-panel" role="complementary" aria-label="Properties">
         <div className="panel-header">Properties</div>
 
-        <div className="panel-section" style={{ color: '#888', fontSize: 13 }}>
+        <div className="panel-section" style={{ color: 'var(--text-muted)', fontSize: 13 }}>
           Select an element on the map to edit its properties.
         </div>
 
         {/* Quick-start guide for new users */}
         {isSmallNetwork && (
           <div className="panel-section">
-            <h4>Getting Started</h4>
-            <div className="quick-start">
-              <div className="quick-start-step"><span className="step-num">1</span> Place nodes using toolbar: <strong>R</strong> = Reservoir, <strong>J</strong> = Junction, <strong>T</strong> = Tank</div>
-              <div className="quick-start-step"><span className="step-num">2</span> Connect with <strong>P</strong> = Pipe, <strong>U</strong> = Pump, <strong>V</strong> = Valve</div>
-              <div className="quick-start-step"><span className="step-num">3</span> Set demands on junctions in this panel</div>
-              <div className="quick-start-step"><span className="step-num">4</span> Click <strong>Compute</strong> to run hydraulic analysis</div>
-              <div className="quick-start-step"><span className="step-num">5</span> Green = pass, Red = fail</div>
+            <div className="summary-card">
+              <div className="summary-card-header">Getting Started</div>
+              <div className="quick-start">
+                <div className="quick-start-step"><span className="step-num">1</span> Place nodes: <strong>R</strong> <strong>J</strong> <strong>T</strong></div>
+                <div className="quick-start-step"><span className="step-num">2</span> Connect: <strong>P</strong> <strong>U</strong> <strong>V</strong></div>
+                <div className="quick-start-step"><span className="step-num">3</span> Set demands on junctions</div>
+                <div className="quick-start-step"><span className="step-num">4</span> Click <strong>Compute</strong></div>
+              </div>
             </div>
           </div>
         )}
 
         {/* Network summary */}
         <div className="panel-section">
-          <h4>Network</h4>
-          <div className="field-row">
-            <span className="field-label">Nodes</span>
-            <span>{totalNodes} ({model.reservoirs.length} res, {model.tanks.length} tank, {model.junctions.length} junc)</span>
-          </div>
-          <div className="field-row">
-            <span className="field-label">Links</span>
-            <span>{totalLinks} ({model.pipes.length} pipe, {model.pumps.length} pump, {model.valves.length} valve)</span>
+          <div className="summary-card">
+            <div className="summary-card-header">Network</div>
+            <div className="summary-stats-row">
+              <div className="summary-stat">
+                <span className="summary-stat-value">{totalNodes}</span>
+                <span className="summary-stat-label">Nodes</span>
+              </div>
+              <div className="summary-stat">
+                <span className="summary-stat-value">{totalLinks}</span>
+                <span className="summary-stat-label">Links</span>
+              </div>
+            </div>
+            <div className="summary-detail">
+              {model.reservoirs.length} reservoir · {model.tanks.length} tank · {model.junctions.length} junction
+            </div>
+            <div className="summary-detail">
+              {model.pipes.length} pipe · {model.pumps.length} pump · {model.valves.length} valve
+            </div>
           </div>
         </div>
 
         {/* Design criteria quick-ref */}
         <div className="panel-section">
-          <h4>Design Criteria</h4>
-          <div className="field-row">
-            <span className="field-label">Pressure floor</span>
-            <span>{dc.residualPressureFloor} m</span>
-          </div>
-          <div className="field-row">
-            <span className="field-label">Velocity band</span>
-            <span>{dc.velocityMin}–{dc.velocityMax} m/s</span>
-          </div>
-          <div className="field-row">
-            <span className="field-label">Economic band</span>
-            <span>{dc.velocityEconomicMin}–{dc.velocityEconomicMax} m/s</span>
-          </div>
-          <div className="field-row">
-            <span className="field-label">LPCD</span>
-            <span>{dc.lpcd}</span>
-          </div>
-          <div className="field-row">
-            <span className="field-label">Roughness (C)</span>
-            <span>{dc.defaultRoughness}</span>
+          <div className="summary-card">
+            <div className="summary-card-header">Design Criteria</div>
+            <div className="summary-grid">
+              <div className="summary-grid-item">
+                <span className="summary-grid-value">{dc.residualPressureFloor} m</span>
+                <span className="summary-grid-label">Pressure floor</span>
+              </div>
+              <div className="summary-grid-item">
+                <span className="summary-grid-value">{dc.velocityMin}–{dc.velocityMax}</span>
+                <span className="summary-grid-label">Velocity (m/s)</span>
+              </div>
+              <div className="summary-grid-item">
+                <span className="summary-grid-value">{dc.lpcd}</span>
+                <span className="summary-grid-label">LPCD</span>
+              </div>
+              <div className="summary-grid-item">
+                <span className="summary-grid-value">{dc.defaultRoughness}</span>
+                <span className="summary-grid-label">Roughness (C)</span>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Results summary when available */}
         {hasResults && (
           <div className="panel-section">
-            <h4>Results</h4>
-            <div className="field-row">
-              <span className="field-label">Pressure</span>
-              <span>
-                <span className={`result-indicator ${pressurePassing === model.junctions.length ? 'result-pass' : 'result-fail'}`}>
-                  {pressurePassing}/{model.junctions.length}
-                </span>
-                {' '}pass ({model.junctions.length > 0 ? (pressurePassing / model.junctions.length * 100).toFixed(0) : 0}%)
-              </span>
-            </div>
-            <div className="field-row">
-              <span className="field-label">Velocity</span>
-              <span>
-                {velocityPassing}/{model.pipes.length} in band
-              </span>
-            </div>
-            <div className="field-row">
-              <span className="field-label">Mode</span>
-              <span>{model.options.duration > 0 ? 'Extended Period (EPS)' : 'Steady State'}</span>
+            <div className="summary-card summary-card--results">
+              <div className="summary-card-header">Results</div>
+              <div className="summary-stats-row">
+                <div className="summary-stat">
+                  <span className={`summary-stat-value ${parseInt(pressurePct) >= 90 ? 'summary-stat--pass' : 'summary-stat--fail'}`}>
+                    {pressurePct}%
+                  </span>
+                  <span className="summary-stat-label">Pressure</span>
+                </div>
+                <div className="summary-stat">
+                  <span className="summary-stat-value">{velocityPassing}/{model.pipes.length}</span>
+                  <span className="summary-stat-label">Vel. in band</span>
+                </div>
+              </div>
+              <div className="summary-detail" style={{ marginTop: 4 }}>
+                {model.options.duration > 0 ? 'Extended Period (EPS)' : 'Steady State'} · {pressurePassing}/{model.junctions.length} pass
+              </div>
             </div>
           </div>
         )}
@@ -155,7 +166,7 @@ export function PropertiesPanel() {
     if (!junction) return null;
 
     return (
-      <div className="properties-panel">
+      <div className="properties-panel" role="complementary" aria-label="Properties">
         <div className="panel-header">Junction — {junction.id}</div>
         <div className="panel-section">
           <h4>Properties</h4>
@@ -194,7 +205,7 @@ export function PropertiesPanel() {
     if (!res) return null;
 
     return (
-      <div className="properties-panel">
+      <div className="properties-panel" role="complementary" aria-label="Properties">
         <div className="panel-header">Reservoir — {res.id}</div>
         <div className="panel-section">
           <h4>Properties</h4>
@@ -229,7 +240,7 @@ export function PropertiesPanel() {
     if (!tank) return null;
 
     return (
-      <div className="properties-panel">
+      <div className="properties-panel" role="complementary" aria-label="Properties">
         <div className="panel-header">Tank — {tank.id}</div>
         <div className="panel-section">
           <h4>Properties</h4>
@@ -268,7 +279,7 @@ export function PropertiesPanel() {
     if (!pipe) return null;
 
     return (
-      <div className="properties-panel">
+      <div className="properties-panel" role="complementary" aria-label="Properties">
         <div className="panel-header">Pipe — {pipe.id}</div>
         <div className="panel-section">
           <h4>Properties</h4>
@@ -332,7 +343,7 @@ export function PropertiesPanel() {
     if (!pump) return null;
 
     return (
-      <div className="properties-panel">
+      <div className="properties-panel" role="complementary" aria-label="Properties">
         <div className="panel-header">Pump — {pump.id}</div>
         <div className="panel-section">
           <h4>Properties</h4>
@@ -380,7 +391,7 @@ export function PropertiesPanel() {
     if (!valve) return null;
 
     return (
-      <div className="properties-panel">
+      <div className="properties-panel" role="complementary" aria-label="Properties">
         <div className="panel-header">Valve — {valve.id}</div>
         <div className="panel-section">
           <h4>Properties</h4>

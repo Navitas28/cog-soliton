@@ -2,7 +2,7 @@
  * Results dashboard — sortable tables, headline summary, NRW readout, tank-level trace.
  * All numbers come from the engine. Never fabricated.
  */
-import { useState, useMemo } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useNetworkStore } from '../store/networkStore';
 import type { NodeResult, LinkResult } from '../engine/engine';
 
@@ -22,8 +22,26 @@ export function ResultsDashboard() {
   const [nodeSort, setNodeSort] = useState<{ key: SortKey; dir: SortDir }>({ key: 'id', dir: 'asc' });
   const [linkSort, setLinkSort] = useState<{ key: SortKey; dir: SortDir }>({ key: 'id', dir: 'asc' });
   const [tab, setTab] = useState<'nodes' | 'links' | 'tanks' | 'nrw'>('nodes');
+  const [heightPx, setHeightPx] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   if (!show) return null;
+
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startHeight = heightPx ?? containerRef.current?.offsetHeight ?? window.innerHeight * 0.45;
+    const onMove = (ev: MouseEvent) => {
+      const delta = startY - ev.clientY;
+      setHeightPx(Math.max(150, Math.min(window.innerHeight * 0.8, startHeight + delta)));
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
 
   // Get current timestep results
   let nodeResults: Map<string, NodeResult> | undefined;
@@ -71,11 +89,14 @@ export function ResultsDashboard() {
   const nrwPercent = (nrwFraction * 100).toFixed(1);
 
   return (
-    <div style={{
-      position: 'absolute', bottom: 0, left: 52, right: 320, height: '45%',
+    <div ref={containerRef} style={{
+      position: 'absolute', bottom: 0, left: 52, right: 320,
+      height: heightPx ? `${heightPx}px` : '45%',
       background: '#fff', borderTop: '2px solid #1a1a2e', zIndex: 15,
       display: 'flex', flexDirection: 'column', overflow: 'hidden',
-    }}>
+    }} role="complementary" aria-label="Results dashboard">
+      {/* Resize handle */}
+      <div className="results-resize-handle" onMouseDown={handleResizeMouseDown} />
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', padding: '8px 16px',
@@ -132,7 +153,8 @@ export function ResultsDashboard() {
         </div>
 
         <button onClick={() => setShow(false)}
-          style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 18 }}>×</button>
+          style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 18 }}
+          aria-label="Close results dashboard">×</button>
       </div>
 
       {/* Content */}

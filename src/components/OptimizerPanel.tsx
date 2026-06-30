@@ -1,7 +1,8 @@
 /**
  * Optimizer UI — modal dialog for pipe auto-sizing.
  */
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { useFocusTrap } from './useFocusTrap';
 import { useNetworkStore } from '../store/networkStore';
 import { optimizePipeSizes } from '../engine/optimizer';
 import { MATERIAL_LABELS } from '../data/pipeCosts';
@@ -9,6 +10,8 @@ import type { PipeMaterial } from '../model/types';
 import type { OptimizationResult } from '../engine/optimizer';
 
 export function OptimizerPanel({ onClose }: { onClose: () => void }) {
+  const trapRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(trapRef, true);
   const model = useNetworkStore(s => s.model);
   const loadModel = useNetworkStore(s => s.loadModel);
   const solve = useNetworkStore(s => s.solve);
@@ -46,7 +49,7 @@ export function OptimizerPanel({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="shortcut-overlay-backdrop" onClick={onClose}>
+    <div ref={trapRef} className="shortcut-overlay-backdrop" onClick={onClose}>
       <div className="optimizer-panel" onClick={e => e.stopPropagation()}>
         <div className="shortcut-overlay-header">
           <span style={{ fontWeight: 700, fontSize: 15 }}>Pipe Auto-Sizing</span>

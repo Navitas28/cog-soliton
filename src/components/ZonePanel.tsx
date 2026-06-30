@@ -1,7 +1,8 @@
 /**
  * Zone/DMA Panel — define zones, view per-zone stats, isolation analysis.
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import { useFocusTrap } from './useFocusTrap';
 import { useNetworkStore } from '../store/networkStore';
 import {
   assignNodesToZones, computeZoneStats, findAffectedNodes, computeIsolationImpact,
@@ -11,6 +12,8 @@ import {
 const ZONE_COLORS = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#34495e'];
 
 export function ZonePanel({ onClose }: { onClose: () => void }) {
+  const trapRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(trapRef, true);
   const model = useNetworkStore(s => s.model);
   const solveResult = useNetworkStore(s => s.solveResult);
   const epsResult = useNetworkStore(s => s.epsResult);
@@ -94,7 +97,7 @@ export function ZonePanel({ onClose }: { onClose: () => void }) {
   const hasResults = !!(solveResult || epsResult);
 
   return (
-    <div className="chart-modal-backdrop" onClick={onClose}>
+    <div ref={trapRef} className="chart-modal-backdrop" onClick={onClose}>
       <div className="chart-modal" onClick={e => e.stopPropagation()}>
         <div className="chart-modal-header">
           <div>

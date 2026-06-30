@@ -2,6 +2,7 @@
  * GIS Import Dialog — drag-and-drop GeoJSON/Shapefile import with attribute mapping.
  */
 import { useState, useCallback, useRef } from 'react';
+import { useFocusTrap } from './useFocusTrap';
 import { useNetworkStore } from '../store/networkStore';
 import { importGeoJSON, autoDetectMapping, type AttributeMapping } from '../import/gisImporter';
 import type { NetworkModel } from '../model/types';
@@ -14,6 +15,8 @@ interface ImportDialogProps {
 type ImportStep = 'upload' | 'mapping' | 'result';
 
 export function ImportDialog({ onClose }: ImportDialogProps) {
+  const trapRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(trapRef, true);
   const loadModel = useNetworkStore(s => s.loadModel);
   const model = useNetworkStore(s => s.model);
 
@@ -132,7 +135,7 @@ export function ImportDialog({ onClose }: ImportDialogProps) {
   }, [geojson, mapping, model, importMode, loadModel, fileName]);
 
   return (
-    <div className="chart-modal-backdrop" onClick={onClose}>
+    <div ref={trapRef} className="chart-modal-backdrop" onClick={onClose}>
       <div className="import-dialog" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="import-dialog-header">

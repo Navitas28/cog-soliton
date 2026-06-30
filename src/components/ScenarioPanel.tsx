@@ -6,6 +6,26 @@ import { useNetworkStore } from '../store/networkStore';
 import { DEFAULT_DIURNAL_PATTERN, computeBaseDemand, computeFireDemand, validatePatternAverage } from '../model/demand';
 import type { QualityType, QualitySource, Rule, RuleCondition, RuleAction } from '../model/types';
 
+function CollapsibleSection({ title, defaultOpen = true, children, actions }: {
+  title: string; defaultOpen?: boolean; children: React.ReactNode;
+  actions?: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="panel-section">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <button className="panel-section-header" onClick={() => setOpen(!open)}
+          aria-expanded={open} style={{ flex: 1 }}>
+          <span className={`panel-section-arrow ${open ? 'open' : ''}`}>▸</span>
+          <h4>{title}</h4>
+        </button>
+        {actions}
+      </div>
+      {open && <div className="panel-section-body">{children}</div>}
+    </div>
+  );
+}
+
 export function ScenarioPanel() {
   const model = useNetworkStore(s => s.model);
   const updateOptions = useNetworkStore(s => s.updateOptions);
@@ -13,6 +33,7 @@ export function ScenarioPanel() {
   const addPattern = useNetworkStore(s => s.addPattern);
   const show = useNetworkStore(s => s.showScenarioPanel);
   const setShow = useNetworkStore(s => s.setShowScenarioPanel);
+  const markScenarioPanelSeen = useNetworkStore(s => s.markScenarioPanelSeen);
 
   if (!show) return null;
 
@@ -24,15 +45,14 @@ export function ScenarioPanel() {
       position: 'absolute', top: 0, left: 52, bottom: 0, width: 340,
       background: '#fff', borderRight: '1px solid #e0e0e0', overflowY: 'auto', zIndex: 20,
       boxShadow: '2px 0 8px rgba(0,0,0,0.1)',
-    }}>
+    }} role="complementary" aria-label="Scenario settings">
       <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         Scenario Settings
-        <button onClick={() => setShow(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 16 }}>×</button>
+        <button onClick={() => { setShow(false); markScenarioPanelSeen(); }} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 16 }} aria-label="Close scenario panel">×</button>
       </div>
 
       {/* Simulation Mode */}
-      <div className="panel-section">
-        <h4>Simulation</h4>
+      <CollapsibleSection title="Simulation">
         <div className="field-row">
           <span className="field-label">Mode</span>
           <select className="field-select" value={opts.duration === 0 ? 'steady' : 'eps'}
@@ -48,11 +68,10 @@ export function ScenarioPanel() {
             <NumField label="Report Timestep" value={opts.reportTimestep} unit="hr" onChange={v => updateOptions({ reportTimestep: v })} />
           </>
         )}
-      </div>
+      </CollapsibleSection>
 
       {/* CPHEEO Design Criteria */}
-      <div className="panel-section">
-        <h4>CPHEEO Design Criteria</h4>
+      <CollapsibleSection title="CPHEEO Design Criteria">
         <NumField label="LPCD" value={dc.lpcd} unit="lpcd" onChange={v => updateDesignCriteria({ lpcd: v })} />
         <NumField label="Peak Factor" value={dc.peakFactor} unit="" onChange={v => updateDesignCriteria({ peakFactor: v })} />
         <div style={{ fontSize: 10, color: '#999', marginBottom: 4 }}>⚠ Verify peak factor against CPHEEO Ch. 2</div>
@@ -64,11 +83,10 @@ export function ScenarioPanel() {
         <NumField label="Default C (H-W)" value={dc.defaultRoughness} unit="" onChange={v => updateDesignCriteria({ defaultRoughness: v })} />
         <NumField label="NRW Target" value={dc.nrwTarget * 100} unit="%" onChange={v => updateDesignCriteria({ nrwTarget: v / 100 })} />
         <NumField label="Design Period" value={dc.designPeriodYears} unit="yr" onChange={v => updateDesignCriteria({ designPeriodYears: v })} />
-      </div>
+      </CollapsibleSection>
 
       {/* LPCD presets */}
-      <div className="panel-section">
-        <h4>LPCD Presets (CPHEEO)</h4>
+      <CollapsibleSection title="LPCD Presets (CPHEEO)" defaultOpen={false}>
         {[
           { label: '150 — Cities > 10 lakh', value: 150 },
           { label: '135 — With sewerage', value: 135 },
@@ -76,19 +94,15 @@ export function ScenarioPanel() {
           { label: '70 — Towns without sewerage', value: 70 },
         ].map(p => (
           <button key={p.value} onClick={() => updateDesignCriteria({ lpcd: p.value })}
-            style={{
-              display: 'block', width: '100%', textAlign: 'left', padding: '4px 8px',
-              border: 'none', background: dc.lpcd === p.value ? '#e8f0fe' : 'transparent',
-              cursor: 'pointer', fontSize: 12, borderRadius: 3, marginBottom: 2,
-            }}>
-            {p.label}
+            className={`preset-btn ${dc.lpcd === p.value ? 'active' : ''}`}>
+            <span className="preset-value">{p.value}</span>
+            <span className="preset-label">{p.label.split(' — ')[1]}</span>
           </button>
         ))}
-      </div>
+      </CollapsibleSection>
 
       {/* Pressure Floor presets */}
-      <div className="panel-section">
-        <h4>Pressure Floor Presets</h4>
+      <CollapsibleSection title="Pressure Floor Presets" defaultOpen={false}>
         {[
           { label: '17 m — 24×7 DMA (Class I/II)', value: 17 },
           { label: '21 m — 24×7 DMA (upper)', value: 21 },
@@ -100,19 +114,15 @@ export function ScenarioPanel() {
           { label: '22 m — Legacy 4-storey', value: 22 },
         ].map(p => (
           <button key={`${p.value}-${p.label}`} onClick={() => updateDesignCriteria({ residualPressureFloor: p.value })}
-            style={{
-              display: 'block', width: '100%', textAlign: 'left', padding: '4px 8px',
-              border: 'none', background: dc.residualPressureFloor === p.value ? '#e8f0fe' : 'transparent',
-              cursor: 'pointer', fontSize: 12, borderRadius: 3, marginBottom: 2,
-            }}>
-            {p.label}
+            className={`preset-btn ${dc.residualPressureFloor === p.value ? 'active' : ''}`}>
+            <span className="preset-value">{p.value} m</span>
+            <span className="preset-label">{p.label.split(' — ')[1]}</span>
           </button>
         ))}
-      </div>
+      </CollapsibleSection>
 
       {/* Demand Patterns */}
-      <div className="panel-section">
-        <h4>Demand Patterns</h4>
+      <CollapsibleSection title="Demand Patterns" defaultOpen={false}>
         {model.patterns.length === 0 && (
           <div style={{ fontSize: 12, color: '#999', marginBottom: 8 }}>No patterns defined. EPS requires at least one.</div>
         )}
@@ -123,22 +133,20 @@ export function ScenarioPanel() {
           style={{ padding: '4px 10px', border: '1px solid #3a5fcf', borderRadius: 4, background: 'transparent', color: '#3a5fcf', cursor: 'pointer', fontSize: 12 }}>
           + Add Default Diurnal Pattern
         </button>
-      </div>
+      </CollapsibleSection>
 
       {/* Demand calculator */}
-      <div className="panel-section">
-        <h4>Demand Calculator</h4>
+      <CollapsibleSection title="Demand Calculator" defaultOpen={false}>
         <DemandCalc lpcd={dc.lpcd} />
-      </div>
+      </CollapsibleSection>
 
       {/* Fire demand calculator */}
-      <div className="panel-section">
-        <h4>Fire Demand Calculator</h4>
+      <CollapsibleSection title="Fire Demand Calculator" defaultOpen={false}>
         <FireDemandCalc />
         <div style={{ fontSize: 10, color: '#e67e22', marginTop: 4, fontWeight: 600 }}>
           ⚠ Verify against CPHEEO Ch. 2
         </div>
-      </div>
+      </CollapsibleSection>
     </div>
   );
 }
@@ -326,8 +334,7 @@ function QualitySection() {
   ];
 
   return (
-    <div className="panel-section">
-      <h4>Water Quality</h4>
+    <CollapsibleSection title="Water Quality" defaultOpen={false}>
       <div className="field-row">
         <span className="field-label">Type</span>
         <select className="field-select" value={qs.type}
@@ -409,7 +416,7 @@ function QualitySection() {
           Requires EPS mode. Quality results computed alongside hydraulics.
         </div>
       )}
-    </div>
+    </CollapsibleSection>
   );
 }
 
@@ -481,11 +488,8 @@ function RulesSection() {
   ];
 
   return (
-    <div className="panel-section">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h4>Operational Rules</h4>
-        <button onClick={addRule} style={{ ...presetBtn, color: '#3a5fcf' }}>+ Add Rule</button>
-      </div>
+    <CollapsibleSection title="Operational Rules" defaultOpen={false}
+      actions={<button onClick={addRule} style={{ ...presetBtn, color: '#3a5fcf' }}>+ Add Rule</button>}>
 
       {rules.length === 0 && (
         <div style={{ fontSize: 11, color: '#999', padding: '8px 0' }}>
@@ -569,7 +573,7 @@ function RulesSection() {
       <div style={{ fontSize: 10, color: '#999', marginTop: 4 }}>
         Rules execute during EPS. Example: "IF Tank T1 level BELOW 2m THEN Pump PU1 OPEN".
       </div>
-    </div>
+    </CollapsibleSection>
   );
 }
 

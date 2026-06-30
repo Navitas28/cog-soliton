@@ -86,7 +86,7 @@ export function SearchBox({ mapRef, onClose }: SearchBoxProps) {
         ref={inputRef}
         className="search-input"
         type="text"
-        placeholder="Search node or pipe ID..."
+        placeholder="Find element..."
         value={query}
         onChange={e => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
