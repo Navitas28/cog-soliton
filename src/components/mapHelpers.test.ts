@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildNodeFeatures, buildLinkFeatures, buildLabelFeatures, offlineBlankStyle } from './mapHelpers';
-import { createEmptyNetwork, defaultDesignCriteria } from '../model/types';
+import { createEmptyNetwork } from '../model/types';
 import { AYODHYA_OUTLINE } from '../data/ayodhyaOutline';
 import type { NodeResult, LinkResult } from '../engine/engine';
 

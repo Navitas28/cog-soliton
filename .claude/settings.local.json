@@ -19,7 +19,12 @@
       "Bash(git commit:*)",
       "Bash(node:*)",
       "Bash(find /Users/navitas28/Work/cognecto/soliton/src -type f -name *.ts)",
-      "Bash(grep -E \"\\\\.tsx?$\")"
+      "Bash(grep -E \"\\\\.tsx?$\")",
+      "Bash(grep -E \"\\\\.md$|CLAUDE\")",
+      "Bash(git -C /Users/navitas28/Work/cognecto/soliton log --oneline)",
+      "Bash(git remote:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)"
     ]
   }
 }

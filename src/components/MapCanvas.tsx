@@ -44,13 +44,6 @@ export function MapCanvas() {
   const epsResult = useNetworkStore(s => s.epsResult);
   const epsTimeIndex = useNetworkStore(s => s.epsTimeIndex);
 
-  const addJunction = useNetworkStore(s => s.addJunction);
-  const addReservoir = useNetworkStore(s => s.addReservoir);
-  const addTank = useNetworkStore(s => s.addTank);
-  const addPipe = useNetworkStore(s => s.addPipe);
-  const addPump = useNetworkStore(s => s.addPump);
-  const addValve = useNetworkStore(s => s.addValve);
-  const moveNode = useNetworkStore(s => s.moveNode);
   const selectElement = useNetworkStore(s => s.selectElement);
   const setActiveTool = useNetworkStore(s => s.setActiveTool);
   const setPipeDrawingFrom = useNetworkStore(s => s.setPipeDrawingFrom);
@@ -358,7 +351,6 @@ export function MapCanvas() {
         const nodeFeatures = map.queryRenderedFeatures(e.point, { layers: ['nodes-circle'] });
         if (nodeFeatures.length === 0) return;
         const hitId = nodeFeatures[0].properties?.id as string;
-        const hitType = nodeFeatures[0].properties?.type as string;
 
         if (!drawFrom) {
           useNetworkStore.getState().setPipeDrawingFrom(hitId);

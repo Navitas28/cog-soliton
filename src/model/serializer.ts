@@ -2,7 +2,7 @@
  * Serialize a NetworkModel to a valid EPANET INP string.
  * This is the single contract between the UI and the solver.
  */
-import type { NetworkModel, Junction, Reservoir, Tank, Pipe, Pump, Valve, DemandPattern, SimulationOptions } from './types';
+import type { NetworkModel, DemandPattern, SimulationOptions } from './types';
 
 function pad(s: string | number, width: number): string {
   return String(s).padEnd(width);

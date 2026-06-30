@@ -36,7 +36,7 @@ describe('Phase 10 — Demand & Pattern Editing', () => {
 
   describe('validatePatternAverage', () => {
     it('default diurnal pattern averages near 1.0', () => {
-      const { valid, average } = validatePatternAverage(DEFAULT_DIURNAL_PATTERN);
+      const { average } = validatePatternAverage(DEFAULT_DIURNAL_PATTERN);
       // Average should be close to 1.0 (within tolerance)
       expect(average).toBeGreaterThan(0.8);
       expect(average).toBeLessThan(1.5);

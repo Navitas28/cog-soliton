@@ -163,7 +163,6 @@ function PatternMini({ pattern }: { pattern: { id: string; multipliers: number[]
   const [editingBar, setEditingBar] = useState<number | null>(null);
   const chartRef = useRef<HTMLDivElement>(null);
 
-  const max = Math.max(...pattern.multipliers, 1);
   const { valid, average } = validatePatternAverage(pattern.multipliers);
   const peak = Math.max(...pattern.multipliers);
   const CHART_HEIGHT = 80;

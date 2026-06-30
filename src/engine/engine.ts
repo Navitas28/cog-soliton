@@ -53,7 +53,7 @@ export async function solveSteadyState(inp: string): Promise<SteadyStateResult> 
 
   project.solveH();
 
-  const nodeResults = new Map<string, { pressure: number; head: number; demand: number }>();
+  const nodeResults = new Map<string, { pressure: number; head: number; demand: number; tankLevel: number }>();
   const linkResults = new Map<string, { flow: number; velocity: number; headloss: number }>();
 
   // Read node results
@@ -103,7 +103,7 @@ export async function solveEPS(inp: string): Promise<EPSResults> {
   project.open(`${pfx}.inp`, `${pfx}.rpt`, `${pfx}.bin`);
 
   const timestamps: number[] = [];
-  const nodeResults = new Map<number, Map<string, { pressure: number; head: number; demand: number }>>();
+  const nodeResults = new Map<number, Map<string, { pressure: number; head: number; demand: number; tankLevel: number }>>();
   const linkResults = new Map<number, Map<string, { flow: number; velocity: number; headloss: number }>>();
 
   const nodeCount = project.getCount(CountType.NodeCount);
@@ -118,13 +118,14 @@ export async function solveEPS(inp: string): Promise<EPSResults> {
     timestamps.push(cTime);
 
     // Capture node results at this timestep
-    const stepNodes = new Map<string, { pressure: number; head: number; demand: number }>();
+    const stepNodes = new Map<string, { pressure: number; head: number; demand: number; tankLevel: number }>();
     for (let i = 1; i <= nodeCount; i++) {
       const id = project.getNodeId(i);
       stepNodes.set(id, {
         pressure: project.getNodeValue(i, NodeProperty.Pressure),
         head: project.getNodeValue(i, NodeProperty.Head),
         demand: project.getNodeValue(i, NodeProperty.Demand),
+        tankLevel: project.getNodeValue(i, NodeProperty.TankLevel),
       });
     }
     nodeResults.set(cTime, stepNodes);

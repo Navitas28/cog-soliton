@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { serializeToInp } from './serializer';
-import { createEmptyNetwork, defaultOptions, defaultDesignCriteria } from './types';
+import { createEmptyNetwork } from './types';
 import { computePipeLength, haversineDistance } from './geodesic';
 import { solveSteadyState } from '../engine/engine';
 

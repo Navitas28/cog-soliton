@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { createEmptyNetwork } from '../model/types';
 
 // Dynamic import — scenarioStore doesn't exist yet
