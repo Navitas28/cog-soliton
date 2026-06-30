@@ -153,9 +153,27 @@ export interface RuleAction {
   value: string | number;
 }
 
+/** City/state metadata for government-style DPR headers */
+export interface CityMetadata {
+  cityName: string;
+  stateName: string;
+  stateGovernment: string;
+  implementingAgency: string;
+  municipalBody: string;
+  missionName: string;
+  cityClass: string;
+  populationLakhs: number;
+  growthRatePct: number;
+  waterSource: string;
+  sourceType: 'river' | 'dam' | 'groundwater' | 'canal';
+  wtpCapacityMLD: number;
+  dprRefPrefix: string;
+}
+
 /** The complete network model */
 export interface NetworkModel {
   title: string;
+  cityMetadata?: CityMetadata;
   junctions: Junction[];
   reservoirs: Reservoir[];
   tanks: Tank[];

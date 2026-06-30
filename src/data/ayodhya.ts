@@ -17,7 +17,7 @@
  * 3. "Saryu source augmentation Phase 1" — source-only
  */
 
-import type { NetworkModel, DemandPattern } from '../model/types';
+import type { NetworkModel, DemandPattern, CityMetadata } from '../model/types';
 import { defaultOptions, defaultDesignCriteria, defaultQualitySettings } from '../model/types';
 import { DEFAULT_DIURNAL_PATTERN } from '../model/demand';
 
@@ -33,6 +33,22 @@ const WTP_LNG = 82.1750;
 // Spread factor — multiplies coordinate offsets from center for visual clarity
 // Real Ayodhya DMA would be ~2-3km across; we spread to ~6km for readability
 const SPREAD = 3.0;
+
+const AYODHYA_METADATA: CityMetadata = {
+  cityName: 'Ayodhya',
+  stateName: 'Uttar Pradesh',
+  stateGovernment: 'Government of Uttar Pradesh',
+  implementingAgency: 'UP Jal Nigam',
+  municipalBody: 'Ayodhya Nagar Nigam',
+  missionName: 'AMRUT 2.0',
+  cityClass: 'Class I',
+  populationLakhs: 5.5,
+  growthRatePct: 2.5,
+  waterSource: 'Saryu River',
+  sourceType: 'river',
+  wtpCapacityMLD: 100,
+  dprRefPrefix: 'AYD',
+};
 
 /** Scale a coordinate relative to Ayodhya center for visual spread */
 function sp(lng: number, lat: number): { x: number; y: number } {
@@ -243,6 +259,7 @@ export function createAyodhyaNetwork(scenario: AyodhyaScenario = '11-wards'): Ne
 
   return {
     title: `Ayodhya AMRUT 2.0 — ${SCENARIO_LABELS[scenario]}`,
+    cityMetadata: AYODHYA_METADATA,
     junctions: activeJunctions,
     reservoirs,
     tanks: scenario === 'saryu-phase1' ? [tanks[0]] : tanks,

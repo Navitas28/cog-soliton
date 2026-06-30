@@ -17,7 +17,7 @@
  * 3. "Kuakhai Source Phase 1" — source + north development
  */
 
-import type { NetworkModel, DemandPattern } from '../model/types';
+import type { NetworkModel, DemandPattern, CityMetadata } from '../model/types';
 import { defaultOptions, defaultDesignCriteria, defaultQualitySettings } from '../model/types';
 import { DEFAULT_DIURNAL_PATTERN } from '../model/demand';
 
@@ -30,6 +30,22 @@ const WTP_LNG = 85.8500;
 
 // Spread factor — same as Ayodhya
 const SPREAD = 3.0;
+
+const BBSR_METADATA: CityMetadata = {
+  cityName: 'Bhubaneswar',
+  stateName: 'Odisha',
+  stateGovernment: 'Government of Odisha',
+  implementingAgency: 'WATCO (Water Corporation of Odisha)',
+  municipalBody: 'Bhubaneswar Municipal Corporation',
+  missionName: 'AMRUT 2.0',
+  cityClass: 'Class I',
+  populationLakhs: 11,
+  growthRatePct: 2.5,
+  waterSource: 'Kuakhai River',
+  sourceType: 'river',
+  wtpCapacityMLD: 130,
+  dprRefPrefix: 'BBSR',
+};
 
 function sp(lng: number, lat: number): { x: number; y: number } {
   return {
@@ -239,6 +255,7 @@ export function createBhubaneswarNetwork(scenario: BhubaneswarScenario = 'full-c
 
   return {
     title: `Bhubaneswar AMRUT 2.0 — ${BBSR_SCENARIO_LABELS[scenario]}`,
+    cityMetadata: BBSR_METADATA,
     junctions: activeJunctions,
     reservoirs,
     tanks: scenario === 'kuakhai-phase1' ? [tanks[1]] : tanks,

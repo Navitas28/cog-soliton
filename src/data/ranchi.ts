@@ -15,7 +15,7 @@
  * 3. "Rukka Phase 1" — transmission + Doranda + Lalpur
  */
 
-import type { NetworkModel, DemandPattern } from '../model/types';
+import type { NetworkModel, DemandPattern, CityMetadata } from '../model/types';
 import { defaultOptions, defaultDesignCriteria, defaultQualitySettings } from '../model/types';
 import { DEFAULT_DIURNAL_PATTERN } from '../model/demand';
 
@@ -23,6 +23,22 @@ const RANCHI_CENTER = { lat: 23.3441, lng: 85.3096 };
 const WTP_LAT = 23.3800;
 const WTP_LNG = 85.3200;
 const SPREAD = 3.0;
+
+const RANCHI_METADATA: CityMetadata = {
+  cityName: 'Ranchi',
+  stateName: 'Jharkhand',
+  stateGovernment: 'Government of Jharkhand',
+  implementingAgency: 'Drinking Water & Sanitation Department',
+  municipalBody: 'Ranchi Municipal Corporation',
+  missionName: 'AMRUT 2.0',
+  cityClass: 'Class I',
+  populationLakhs: 14,
+  growthRatePct: 2.5,
+  waterSource: 'Getalsud Dam (Subarnarekha River)',
+  sourceType: 'dam',
+  wtpCapacityMLD: 170,
+  dprRefPrefix: 'RNC',
+};
 
 function sp(lng: number, lat: number): { x: number; y: number } {
   return {
@@ -184,6 +200,7 @@ export function createRanchiNetwork(scenario: RanchiScenario = 'full-city'): Net
 
   return {
     title: `Ranchi AMRUT 2.0 — ${RANCHI_SCENARIO_LABELS[scenario]}`,
+    cityMetadata: RANCHI_METADATA,
     junctions: activeJunctions,
     reservoirs,
     tanks: scenario === 'rukka-phase1' ? [tanks[1]] : tanks,

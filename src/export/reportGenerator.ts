@@ -1,7 +1,7 @@
 /**
  * DPR (Detailed Project Report) PDF generator.
- * Produces a professional 12-15 page report suitable for municipal tender submissions.
- * Uses jsPDF for rendering and reportHelpers for data preparation.
+ * Produces a professional 18-page government-style report suitable for municipal tender submissions.
+ * Uses jsPDF for rendering, reportHelpers for data preparation, and reportPages/ for page modules.
  */
 import { jsPDF } from 'jspdf';
 import type { NetworkModel } from '../model/types';
@@ -13,67 +13,23 @@ import {
   buildNodeResultsTable,
   formatLakhs,
 } from './reportHelpers';
+import {
+  addText, addPageFooter, addSectionTitle, tableHeader, checkPageBreak,
+  DARK, ACCENT, PASS_GREEN, FAIL_RED, MUTED, TABLE_HEADER_BG,
+  PAGE_W, MARGIN, CONTENT_W,
+} from './reportPages/shared';
+import { renderGovHeaderPage } from './reportPages/govHeader';
+import { renderPopulationPage } from './reportPages/populationTable';
+import { renderAbstractOfCostPage } from './reportPages/abstractOfCost';
+import { renderCertificationPage } from './reportPages/certification';
+import { renderSourceWaterPage } from './reportPages/sourceWater';
+import { renderAnnexuresPage } from './reportPages/annexures';
+import { renderRevisionHistory } from './reportPages/revisionHistory';
 
 interface ReportData {
   model: NetworkModel;
   results: SteadyStateResult;
   mapImageDataUrl?: string;
-}
-
-/* ─── Colors ─── */
-const DARK = [26, 26, 46] as [number, number, number];
-const ACCENT = [58, 95, 207] as [number, number, number];
-const PASS_GREEN = [39, 174, 96] as [number, number, number];
-const FAIL_RED = [231, 76, 60] as [number, number, number];
-const MUTED = [120, 120, 140] as [number, number, number];
-const TABLE_HEADER_BG = [240, 242, 248] as [number, number, number];
-
-/* ─── Shared helpers ─── */
-const PAGE_W = 210;
-const MARGIN = 15;
-const CONTENT_W = PAGE_W - 2 * MARGIN;
-
-function addText(doc: jsPDF, text: string, x: number, y: number, opts?: {
-  size?: number; bold?: boolean; color?: [number, number, number]; align?: 'left' | 'center' | 'right';
-}) {
-  doc.setFontSize(opts?.size || 10);
-  doc.setFont('helvetica', opts?.bold ? 'bold' : 'normal');
-  doc.setTextColor(...(opts?.color || [30, 30, 30]));
-  doc.text(text, x, y, { align: opts?.align });
-}
-
-function addPageFooter(doc: jsPDF, pageNum: number) {
-  const y = 285;
-  doc.setDrawColor(220, 220, 220);
-  doc.line(MARGIN, y, PAGE_W - MARGIN, y);
-  addText(doc, 'SOLITON — Hydraulic Network Design Report', MARGIN, y + 4, { size: 7, color: [180, 180, 180] });
-  addText(doc, `Page ${pageNum}`, PAGE_W - MARGIN, y + 4, { size: 7, color: [180, 180, 180], align: 'right' });
-}
-
-function addSectionTitle(doc: jsPDF, title: string, y: number): number {
-  doc.setFillColor(...ACCENT);
-  doc.rect(MARGIN, y - 1, 3, 7, 'F');
-  addText(doc, title, MARGIN + 7, y + 4, { size: 14, bold: true, color: DARK });
-  return y + 12;
-}
-
-function tableHeader(doc: jsPDF, cols: { x: number; label: string }[], y: number): number {
-  doc.setFillColor(...TABLE_HEADER_BG);
-  doc.rect(MARGIN, y - 4, CONTENT_W, 7, 'F');
-  for (const c of cols) {
-    addText(doc, c.label, c.x, y, { size: 8, bold: true, color: MUTED });
-  }
-  return y + 5;
-}
-
-function checkPageBreak(doc: jsPDF, y: number, pageNum: { n: number }, needed = 15): number {
-  if (y > 270 - needed) {
-    addPageFooter(doc, pageNum.n);
-    doc.addPage();
-    pageNum.n++;
-    return MARGIN + 5;
-  }
-  return y;
 }
 
 /* ─── Main Generator ─── */
@@ -83,6 +39,7 @@ export function generateReport(data: ReportData): void {
   const dc = model.designCriteria;
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageNum = { n: 1 };
+  const hasMeta = !!model.cityMetadata;
 
   const compliance = computeComplianceSummary(model, results, dc.residualPressureFloor, dc.velocityMin, dc.velocityMax);
   const nrw = computeNRW(
@@ -95,9 +52,20 @@ export function generateReport(data: ReportData): void {
   const totalCost = pipeSchedule.reduce((s, p) => s + p.cost, 0);
   const totalLength = pipeSchedule.reduce((s, p) => s + p.length, 0);
 
+  // Chapter numbering — adjusts based on conditional pages
+  let ch = 1;
+
   // ═══════════════════════════════════════════
-  // PAGE 1: COVER
+  // PAGE 1: GOVERNMENT HEADER (NEW)
   // ═══════════════════════════════════════════
+  renderGovHeaderPage(doc, model);
+
+  // ═══════════════════════════════════════════
+  // PAGE 2: COVER
+  // ═══════════════════════════════════════════
+  doc.addPage();
+  pageNum.n++;
+
   doc.setFillColor(...DARK);
   doc.rect(0, 0, PAGE_W, 297, 'F');
 
@@ -135,9 +103,9 @@ export function generateReport(data: ReportData): void {
 
   // Design basis
   addText(doc, `Design Basis: CPHEEO 2024 | ${dc.lpcd} lpcd | ${dc.residualPressureFloor}m pressure floor`, PAGE_W / 2, 200, { size: 10, color: MUTED, align: 'center' });
-  addText(doc, `Hazen-Williams | ${dc.velocityMin}–${dc.velocityMax} m/s velocity band | NRW target <${(dc.nrwTarget * 100).toFixed(0)}%`, PAGE_W / 2, 208, { size: 9, color: [100, 100, 120], align: 'center' });
+  addText(doc, `Hazen-Williams | ${dc.velocityMin}\u2013${dc.velocityMax} m/s velocity band | NRW target <${(dc.nrwTarget * 100).toFixed(0)}%`, PAGE_W / 2, 208, { size: 9, color: [100, 100, 120], align: 'center' });
 
-  // Date + tool
+  // Date
   addText(doc, new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }), PAGE_W / 2, 240, { size: 10, color: [100, 100, 120], align: 'center' });
 
   // Footer bar
@@ -146,7 +114,7 @@ export function generateReport(data: ReportData): void {
   addText(doc, 'EPANET 2.2 (WebAssembly) | Browser-based Hydraulic Analysis | No Server Required', PAGE_W / 2, 285, { size: 8, color: [100, 100, 120], align: 'center' });
 
   // ═══════════════════════════════════════════
-  // PAGE 2: TABLE OF CONTENTS
+  // PAGE 3: TABLE OF CONTENTS + REVISION HISTORY
   // ═══════════════════════════════════════════
   doc.addPage();
   pageNum.n++;
@@ -155,20 +123,24 @@ export function generateReport(data: ReportData): void {
   y = addSectionTitle(doc, 'Table of Contents', y);
   y += 4;
 
-  const tocItems = [
-    { num: '1', title: 'Executive Summary', page: '3' },
-    { num: '2', title: 'Network Map', page: '4' },
-    { num: '3', title: 'Pressure Compliance', page: '5' },
-    { num: '4', title: 'Velocity Analysis', page: '6' },
-    { num: '5', title: 'Water Balance & NRW', page: '7' },
-    { num: '6', title: 'Node Results Schedule', page: '8' },
-    { num: '7', title: 'Pipe Schedule', page: '9' },
-    { num: '8', title: 'Cost Summary', page: '10' },
-    { num: '9', title: 'Design Criteria (CPHEEO)', page: '11' },
-    { num: '10', title: 'Deficient Zones', page: '12' },
-  ];
+  // Build dynamic TOC
+  const tocEntries: { num: string; title: string }[] = [];
+  let tocCh = 1;
+  tocEntries.push({ num: String(tocCh++), title: 'Executive Summary' });
+  if (hasMeta) tocEntries.push({ num: String(tocCh++), title: 'Population & Demand Projection' });
+  tocEntries.push({ num: String(tocCh++), title: 'Network Map' });
+  tocEntries.push({ num: String(tocCh++), title: 'Pressure Compliance' });
+  tocEntries.push({ num: String(tocCh++), title: 'Velocity Analysis' });
+  tocEntries.push({ num: String(tocCh++), title: 'Water Balance & NRW' });
+  if (hasMeta) tocEntries.push({ num: String(tocCh++), title: 'Source & Raw Water' });
+  tocEntries.push({ num: String(tocCh++), title: 'Node Results Schedule' });
+  tocEntries.push({ num: String(tocCh++), title: 'Pipe Schedule' });
+  tocEntries.push({ num: String(tocCh++), title: 'Cost Summary' });
+  tocEntries.push({ num: String(tocCh++), title: 'Abstract of Cost' });
+  tocEntries.push({ num: String(tocCh++), title: 'Design Criteria (CPHEEO 2024)' });
+  tocEntries.push({ num: String(tocCh++), title: 'Deficient Zones' });
 
-  for (const item of tocItems) {
+  for (const item of tocEntries) {
     addText(doc, `${item.num}.`, MARGIN + 4, y, { size: 11, color: ACCENT });
     addText(doc, item.title, MARGIN + 16, y, { size: 11 });
     // Dotted line
@@ -176,20 +148,34 @@ export function generateReport(data: ReportData): void {
     for (let dx = textEnd; dx < PAGE_W - MARGIN - 15; dx += 2) {
       doc.circle(dx, y - 0.5, 0.3, 'F');
     }
-    addText(doc, item.page, PAGE_W - MARGIN, y, { size: 11, color: MUTED, align: 'right' });
     y += 8;
   }
+
+  // Annexures
+  y += 4;
+  addText(doc, 'Annexures', MARGIN + 4, y, { size: 11, bold: true, color: DARK });
+  y += 8;
+  addText(doc, 'A.', MARGIN + 4, y, { size: 11, color: ACCENT });
+  addText(doc, 'Data Sources & References', MARGIN + 16, y, { size: 11 });
+  y += 8;
+  addText(doc, 'B.', MARGIN + 4, y, { size: 11, color: ACCENT });
+  addText(doc, 'Certificate', MARGIN + 16, y, { size: 11 });
+  y += 12;
+
+  // Revision history
+  y = renderRevisionHistory(doc, y);
 
   addPageFooter(doc, pageNum.n);
 
   // ═══════════════════════════════════════════
-  // PAGE 3: EXECUTIVE SUMMARY
+  // PAGE 4: EXECUTIVE SUMMARY
   // ═══════════════════════════════════════════
   doc.addPage();
   pageNum.n++;
   y = MARGIN;
 
-  y = addSectionTitle(doc, '1. Executive Summary', y);
+  y = addSectionTitle(doc, `${ch}. Executive Summary`, y);
+  ch++;
 
   // Summary cards
   const cardW = (CONTENT_W - 8) / 3;
@@ -239,7 +225,7 @@ export function generateReport(data: ReportData): void {
     ['Pumps / Valves', `${model.pumps.length} / ${model.valves.length}`],
     ['Total Pipe Length', `${(totalLength / 1000).toFixed(2)} km`],
     ['Estimated Pipe Cost', formatLakhs(totalCost)],
-    ['Total System Input', `${nrw.totalInput.toFixed(2)} LPS (${(nrw.totalInput * 86.4).toFixed(0)} m³/day)`],
+    ['Total System Input', `${nrw.totalInput.toFixed(2)} LPS (${(nrw.totalInput * 86.4).toFixed(0)} m\u00B3/day)`],
     ['Total System Demand', `${nrw.totalDemand.toFixed(2)} LPS`],
     ['Simulation Mode', model.options.duration > 0 ? `EPS (${model.options.duration}hr)` : 'Steady State'],
     ['Design Period', `${dc.designPeriodYears} years`],
@@ -254,13 +240,24 @@ export function generateReport(data: ReportData): void {
   addPageFooter(doc, pageNum.n);
 
   // ═══════════════════════════════════════════
-  // PAGE 4: NETWORK MAP
+  // POPULATION & DEMAND PROJECTION (conditional)
+  // ═══════════════════════════════════════════
+  if (hasMeta) {
+    doc.addPage();
+    pageNum.n++;
+    renderPopulationPage(doc, pageNum, model, ch);
+    ch++;
+  }
+
+  // ═══════════════════════════════════════════
+  // NETWORK MAP
   // ═══════════════════════════════════════════
   doc.addPage();
   pageNum.n++;
   y = MARGIN;
 
-  y = addSectionTitle(doc, '2. Network Map', y);
+  y = addSectionTitle(doc, `${ch}. Network Map`, y);
+  ch++;
 
   if (mapImageDataUrl) {
     try {
@@ -270,7 +267,7 @@ export function generateReport(data: ReportData): void {
       y += imgH + 6;
       addText(doc, 'Figure 1: Network layout with hydraulic results overlay', PAGE_W / 2, y, { size: 8, color: MUTED, align: 'center' });
     } catch {
-      addText(doc, '(Map screenshot not available — canvas may be tainted by cross-origin tiles)', MARGIN, y + 30, { size: 10, color: MUTED });
+      addText(doc, '(Map screenshot not available \u2014 canvas may be tainted by cross-origin tiles)', MARGIN, y + 30, { size: 10, color: MUTED });
     }
   } else {
     // Draw schematic network diagram as fallback
@@ -280,7 +277,6 @@ export function generateReport(data: ReportData): void {
 
     const allNodes = [...model.reservoirs, ...model.tanks, ...model.junctions];
     if (allNodes.length > 0) {
-      // Compute bounds
       const xs = allNodes.map(n => n.x);
       const ys = allNodes.map(n => n.y);
       const minX = Math.min(...xs), maxX = Math.max(...xs);
@@ -291,15 +287,13 @@ export function generateReport(data: ReportData): void {
       const drawW = CONTENT_W - pad * 2;
       const drawH = schematicH - pad * 2;
       const toX = (x: number) => MARGIN + pad + ((x - minX) / rangeX) * drawW;
-      const toY = (ly: number) => y + pad + drawH - ((ly - minY) / rangeY) * drawH; // flip Y
+      const toY = (ly: number) => y + pad + drawH - ((ly - minY) / rangeY) * drawH;
 
-      // Draw pipes
       doc.setLineWidth(0.4);
       for (const pipe of model.pipes) {
         const from = allNodes.find(n => n.id === pipe.fromNode);
         const to = allNodes.find(n => n.id === pipe.toNode);
         if (from && to) {
-          // Color by velocity result
           const lr = results.linkResults.get(pipe.id);
           if (lr) {
             const v = Math.abs(lr.velocity);
@@ -313,7 +307,6 @@ export function generateReport(data: ReportData): void {
         }
       }
 
-      // Draw nodes
       for (const n of allNodes) {
         const px = toX(n.x), py = toY(n.y);
         const isRes = model.reservoirs.some(r => r.id === n.id);
@@ -332,7 +325,6 @@ export function generateReport(data: ReportData): void {
           doc.circle(px, py, 1.5, 'F');
         }
 
-        // Label
         doc.setFontSize(4);
         doc.setTextColor(80, 80, 80);
         doc.text(n.id, px + 3, py + 1);
@@ -352,8 +344,8 @@ export function generateReport(data: ReportData): void {
   const legendItems = [
     { color: [0, 128, 255] as [number, number, number], label: 'Reservoir (WTP)' },
     { color: [128, 0, 255] as [number, number, number], label: 'Overhead Tank (OHT)' },
-    { color: PASS_GREEN, label: `Junction — Pressure >= ${dc.residualPressureFloor}m (PASS)` },
-    { color: FAIL_RED, label: `Junction — Pressure < ${dc.residualPressureFloor}m (FAIL)` },
+    { color: PASS_GREEN, label: `Junction \u2014 Pressure >= ${dc.residualPressureFloor}m (PASS)` },
+    { color: FAIL_RED, label: `Junction \u2014 Pressure < ${dc.residualPressureFloor}m (FAIL)` },
   ];
   let ly = legendY + 6;
   for (const item of legendItems) {
@@ -366,22 +358,21 @@ export function generateReport(data: ReportData): void {
   addPageFooter(doc, pageNum.n);
 
   // ═══════════════════════════════════════════
-  // PAGE 5: PRESSURE COMPLIANCE
+  // PRESSURE COMPLIANCE
   // ═══════════════════════════════════════════
   doc.addPage();
   pageNum.n++;
   y = MARGIN;
 
-  y = addSectionTitle(doc, '3. Pressure Compliance', y);
+  y = addSectionTitle(doc, `${ch}. Pressure Compliance`, y);
+  ch++;
 
-  // Headline
   const pColor = compliance.pressurePct >= 90 ? PASS_GREEN : FAIL_RED;
   addText(doc, `${compliance.pressurePct.toFixed(1)}% of junctions meet the ${dc.residualPressureFloor}m pressure floor`, MARGIN, y, { size: 12, bold: true, color: pColor });
   y += 8;
   addText(doc, `${compliance.pressurePassing} PASS | ${compliance.pressureTotal - compliance.pressurePassing} FAIL out of ${compliance.pressureTotal} junctions`, MARGIN, y, { size: 10, color: MUTED });
   y += 10;
 
-  // Pressure distribution table (all junctions sorted)
   const sortedNodes = [...nodeTable].sort((a, b) => a.pressure - b.pressure);
   const pCols = [
     { x: MARGIN, label: 'Node' },
@@ -407,20 +398,20 @@ export function generateReport(data: ReportData): void {
   addPageFooter(doc, pageNum.n);
 
   // ═══════════════════════════════════════════
-  // PAGE 6: VELOCITY ANALYSIS
+  // VELOCITY ANALYSIS
   // ═══════════════════════════════════════════
   doc.addPage();
   pageNum.n++;
   y = MARGIN;
 
-  y = addSectionTitle(doc, '4. Velocity Analysis', y);
+  y = addSectionTitle(doc, `${ch}. Velocity Analysis`, y);
+  ch++;
 
-  addText(doc, `${compliance.velocityPassing}/${compliance.velocityTotal} pipes within permissible velocity band (${dc.velocityMin}–${dc.velocityMax} m/s)`, MARGIN, y, { size: 11, bold: true });
+  addText(doc, `${compliance.velocityPassing}/${compliance.velocityTotal} pipes within permissible velocity band (${dc.velocityMin}\u2013${dc.velocityMax} m/s)`, MARGIN, y, { size: 11, bold: true });
   y += 6;
-  addText(doc, `Economic velocity band: ${dc.velocityEconomicMin}–${dc.velocityEconomicMax} m/s`, MARGIN, y, { size: 9, color: MUTED });
+  addText(doc, `Economic velocity band: ${dc.velocityEconomicMin}\u2013${dc.velocityEconomicMax} m/s`, MARGIN, y, { size: 9, color: MUTED });
   y += 10;
 
-  // Velocity table
   const vCols = [
     { x: MARGIN, label: 'Pipe' },
     { x: MARGIN + 20, label: 'Dia (mm)' },
@@ -453,15 +444,15 @@ export function generateReport(data: ReportData): void {
   addPageFooter(doc, pageNum.n);
 
   // ═══════════════════════════════════════════
-  // PAGE 7: WATER BALANCE & NRW
+  // WATER BALANCE & NRW
   // ═══════════════════════════════════════════
   doc.addPage();
   pageNum.n++;
   y = MARGIN;
 
-  y = addSectionTitle(doc, '5. Water Balance & NRW', y);
+  y = addSectionTitle(doc, `${ch}. Water Balance & NRW`, y);
+  ch++;
 
-  // Water balance box
   doc.setFillColor(247, 248, 252);
   doc.roundedRect(MARGIN, y, CONTENT_W, 55, 4, 4, 'F');
 
@@ -484,13 +475,12 @@ export function generateReport(data: ReportData): void {
 
   y += 65;
 
-  // Daily volumes
   addText(doc, 'Daily Volumes', MARGIN, y, { size: 12, bold: true });
   y += 7;
   const dailyData = [
-    ['System Input', `${(nrw.totalInput * 86.4).toFixed(0)} m³/day`, `${(nrw.totalInput * 86400 / 1000).toFixed(1)} kL/day`],
-    ['System Demand', `${(nrw.totalDemand * 86.4).toFixed(0)} m³/day`, `${(nrw.totalDemand * 86400 / 1000).toFixed(1)} kL/day`],
-    ['NRW Volume', `${(nrw.nrwLps * 86.4).toFixed(0)} m³/day`, `${(nrw.nrwLps * 86400 / 1000).toFixed(1)} kL/day`],
+    ['System Input', `${(nrw.totalInput * 86.4).toFixed(0)} m\u00B3/day`, `${(nrw.totalInput * 86400 / 1000).toFixed(1)} kL/day`],
+    ['System Demand', `${(nrw.totalDemand * 86.4).toFixed(0)} m\u00B3/day`, `${(nrw.totalDemand * 86400 / 1000).toFixed(1)} kL/day`],
+    ['NRW Volume', `${(nrw.nrwLps * 86.4).toFixed(0)} m\u00B3/day`, `${(nrw.nrwLps * 86400 / 1000).toFixed(1)} kL/day`],
   ];
   for (const [label, v1, v2] of dailyData) {
     addText(doc, label, MARGIN + 2, y, { size: 9, color: MUTED });
@@ -502,15 +492,25 @@ export function generateReport(data: ReportData): void {
   addPageFooter(doc, pageNum.n);
 
   // ═══════════════════════════════════════════
-  // PAGE 8: NODE RESULTS SCHEDULE
+  // SOURCE & RAW WATER (conditional)
+  // ═══════════════════════════════════════════
+  if (hasMeta) {
+    doc.addPage();
+    pageNum.n++;
+    renderSourceWaterPage(doc, pageNum, model, ch);
+    ch++;
+  }
+
+  // ═══════════════════════════════════════════
+  // NODE RESULTS SCHEDULE
   // ═══════════════════════════════════════════
   doc.addPage();
   pageNum.n++;
   y = MARGIN;
 
-  y = addSectionTitle(doc, '6. Node Results Schedule', y);
+  y = addSectionTitle(doc, `${ch}. Node Results Schedule`, y);
+  ch++;
 
-  // Reservoir results
   addText(doc, 'Reservoirs', MARGIN, y, { size: 11, bold: true });
   y += 6;
   for (const r of model.reservoirs) {
@@ -521,7 +521,6 @@ export function generateReport(data: ReportData): void {
   }
   y += 4;
 
-  // Tank results
   if (model.tanks.length > 0) {
     addText(doc, 'Tanks', MARGIN, y, { size: 11, bold: true });
     y += 6;
@@ -534,7 +533,6 @@ export function generateReport(data: ReportData): void {
     y += 4;
   }
 
-  // Junction results (full list)
   addText(doc, 'Junctions', MARGIN, y, { size: 11, bold: true });
   y += 6;
 
@@ -562,13 +560,14 @@ export function generateReport(data: ReportData): void {
   addPageFooter(doc, pageNum.n);
 
   // ═══════════════════════════════════════════
-  // PAGE 9: PIPE SCHEDULE
+  // PIPE SCHEDULE
   // ═══════════════════════════════════════════
   doc.addPage();
   pageNum.n++;
   y = MARGIN;
 
-  y = addSectionTitle(doc, '7. Pipe Schedule', y);
+  y = addSectionTitle(doc, `${ch}. Pipe Schedule`, y);
+  ch++;
 
   addText(doc, `Total: ${model.pipes.length} pipes | ${(totalLength / 1000).toFixed(2)} km | ${formatLakhs(totalCost)}`, MARGIN, y, { size: 10, color: MUTED });
   y += 8;
@@ -607,15 +606,15 @@ export function generateReport(data: ReportData): void {
   addPageFooter(doc, pageNum.n);
 
   // ═══════════════════════════════════════════
-  // PAGE 10: COST SUMMARY
+  // COST SUMMARY
   // ═══════════════════════════════════════════
   doc.addPage();
   pageNum.n++;
   y = MARGIN;
 
-  y = addSectionTitle(doc, '8. Cost Summary', y);
+  y = addSectionTitle(doc, `${ch}. Cost Summary`, y);
+  ch++;
 
-  // Total cost card
   doc.setFillColor(247, 248, 252);
   doc.roundedRect(MARGIN, y, CONTENT_W, 24, 4, 4, 'F');
   doc.setFillColor(...ACCENT);
@@ -625,7 +624,6 @@ export function generateReport(data: ReportData): void {
   addText(doc, `${(totalLength / 1000).toFixed(2)} km | Cost/km: ${formatLakhs(totalCost / (totalLength / 1000 || 1))}`, MARGIN + 8, y + 19, { size: 8, color: MUTED });
   y += 32;
 
-  // Cost by diameter
   addText(doc, 'Cost by Pipe Diameter', MARGIN, y, { size: 11, bold: true });
   y += 7;
 
@@ -648,20 +646,19 @@ export function generateReport(data: ReportData): void {
   y = tableHeader(doc, diaCols, y);
 
   const sortedDias = [...byDia.entries()].sort((a, b) => b[1].cost - a[1].cost);
-  for (const [dia, data] of sortedDias) {
+  for (const [dia, diaData] of sortedDias) {
     y = checkPageBreak(doc, y, pageNum);
-    const pct = totalCost > 0 ? (data.cost / totalCost * 100) : 0;
+    const pct = totalCost > 0 ? (diaData.cost / totalCost * 100) : 0;
     addText(doc, String(dia), diaCols[0].x, y, { size: 9 });
-    addText(doc, String(data.count), diaCols[1].x, y, { size: 9 });
-    addText(doc, data.length.toFixed(0), diaCols[2].x, y, { size: 9 });
-    addText(doc, formatLakhs(data.cost), diaCols[3].x, y, { size: 9 });
+    addText(doc, String(diaData.count), diaCols[1].x, y, { size: 9 });
+    addText(doc, diaData.length.toFixed(0), diaCols[2].x, y, { size: 9 });
+    addText(doc, formatLakhs(diaData.cost), diaCols[3].x, y, { size: 9 });
     addText(doc, `${pct.toFixed(1)}%`, diaCols[4].x, y, { size: 9 });
     y += 5;
   }
 
   y += 6;
 
-  // Cost by material
   addText(doc, 'Cost by Material', MARGIN, y, { size: 11, bold: true });
   y += 7;
 
@@ -683,13 +680,13 @@ export function generateReport(data: ReportData): void {
   ];
   y = tableHeader(doc, matCols, y);
 
-  for (const [mat, data] of byMat.entries()) {
+  for (const [mat, matData] of byMat.entries()) {
     y = checkPageBreak(doc, y, pageNum);
-    const pct = totalCost > 0 ? (data.cost / totalCost * 100) : 0;
+    const pct = totalCost > 0 ? (matData.cost / totalCost * 100) : 0;
     addText(doc, mat, matCols[0].x, y, { size: 9 });
-    addText(doc, String(data.count), matCols[1].x, y, { size: 9 });
-    addText(doc, data.length.toFixed(0), matCols[2].x, y, { size: 9 });
-    addText(doc, formatLakhs(data.cost), matCols[3].x, y, { size: 9 });
+    addText(doc, String(matData.count), matCols[1].x, y, { size: 9 });
+    addText(doc, matData.length.toFixed(0), matCols[2].x, y, { size: 9 });
+    addText(doc, formatLakhs(matData.cost), matCols[3].x, y, { size: 9 });
     addText(doc, `${pct.toFixed(1)}%`, matCols[4].x, y, { size: 9 });
     y += 5;
   }
@@ -697,22 +694,31 @@ export function generateReport(data: ReportData): void {
   addPageFooter(doc, pageNum.n);
 
   // ═══════════════════════════════════════════
-  // PAGE 11: DESIGN CRITERIA
+  // ABSTRACT OF COST (NEW)
+  // ═══════════════════════════════════════════
+  doc.addPage();
+  pageNum.n++;
+  renderAbstractOfCostPage(doc, pageNum, totalCost, ch);
+  ch++;
+
+  // ═══════════════════════════════════════════
+  // DESIGN CRITERIA
   // ═══════════════════════════════════════════
   doc.addPage();
   pageNum.n++;
   y = MARGIN;
 
-  y = addSectionTitle(doc, '9. Design Criteria (CPHEEO 2024)', y);
+  y = addSectionTitle(doc, `${ch}. Design Criteria (CPHEEO 2024)`, y);
+  ch++;
 
   const criteriaData = [
     ['Parameter', 'Value', 'Reference'],
     ['Per-capita supply', `${dc.lpcd} lpcd`, 'CPHEEO 2024 Rev, Class I city'],
     ['Peak factor', `${dc.peakFactor}`, 'CPHEEO Ch. 2 (verify)'],
     ['Residual pressure floor', `${dc.residualPressureFloor} m`, 'CPHEEO 24x7 DMA (Class I/II)'],
-    ['Velocity (permissible)', `${dc.velocityMin}–${dc.velocityMax} m/s`, 'CPHEEO'],
-    ['Velocity (economic)', `${dc.velocityEconomicMin}–${dc.velocityEconomicMax} m/s`, 'CPHEEO'],
-    ['Hazen-Williams C', `${dc.defaultRoughness}`, 'CPHEEO — new DI pipe'],
+    ['Velocity (permissible)', `${dc.velocityMin}\u2013${dc.velocityMax} m/s`, 'CPHEEO'],
+    ['Velocity (economic)', `${dc.velocityEconomicMin}\u2013${dc.velocityEconomicMax} m/s`, 'CPHEEO'],
+    ['Hazen-Williams C', `${dc.defaultRoughness}`, 'CPHEEO \u2014 new DI pipe'],
     ['NRW target', `<${(dc.nrwTarget * 100).toFixed(0)}%`, 'AMRUT 2.0'],
     ['Design period', `${dc.designPeriodYears} years`, 'CPHEEO'],
     ['Headloss formula', 'Hazen-Williams', 'CPHEEO standard'],
@@ -720,7 +726,6 @@ export function generateReport(data: ReportData): void {
     ['Demand multiplier', `${model.options.demandMultiplier}`, 'Global multiplier'],
   ];
 
-  // Header row
   doc.setFillColor(...TABLE_HEADER_BG);
   doc.rect(MARGIN, y - 4, CONTENT_W, 7, 'F');
   addText(doc, criteriaData[0][0], MARGIN, y, { size: 9, bold: true, color: MUTED });
@@ -742,20 +747,21 @@ export function generateReport(data: ReportData): void {
   addPageFooter(doc, pageNum.n);
 
   // ═══════════════════════════════════════════
-  // PAGE 12: DEFICIENT ZONES
+  // DEFICIENT ZONES
   // ═══════════════════════════════════════════
   doc.addPage();
   pageNum.n++;
   y = MARGIN;
 
-  y = addSectionTitle(doc, '10. Deficient Zones — Remediation Required', y);
+  y = addSectionTitle(doc, `${ch}. Deficient Zones \u2014 Remediation Required`, y);
+  ch++;
 
   if (compliance.deficientJunctions.length === 0) {
     doc.setFillColor(230, 245, 235);
     doc.roundedRect(MARGIN, y, CONTENT_W, 20, 4, 4, 'F');
     addText(doc, 'All junctions meet the minimum pressure requirement.', PAGE_W / 2, y + 12, { size: 12, bold: true, color: PASS_GREEN, align: 'center' });
   } else {
-    addText(doc, `${compliance.deficientJunctions.length} junctions below ${dc.residualPressureFloor}m pressure floor — remediation required`, MARGIN, y, { size: 10, bold: true, color: FAIL_RED });
+    addText(doc, `${compliance.deficientJunctions.length} junctions below ${dc.residualPressureFloor}m pressure floor \u2014 remediation required`, MARGIN, y, { size: 10, bold: true, color: FAIL_RED });
     y += 8;
 
     const dCols = [
@@ -784,27 +790,30 @@ export function generateReport(data: ReportData): void {
     const actions = [
       'Increase pipe diameters in critical corridors to reduce head loss',
       'Consider additional booster pumps or elevated storage near deficient zones',
-      'Review demand allocation — verify population estimates for affected zones',
+      'Review demand allocation \u2014 verify population estimates for affected zones',
       'Evaluate network looping to provide alternative flow paths',
     ];
     for (const action of actions) {
-      addText(doc, `  •  ${action}`, MARGIN, y, { size: 9, color: [80, 80, 80] });
+      addText(doc, `  \u2022  ${action}`, MARGIN, y, { size: 9, color: [80, 80, 80] });
       y += 5.5;
     }
   }
 
-  // Final footer
-  y += 15;
-  y = checkPageBreak(doc, y, pageNum, 30);
-  doc.setDrawColor(200, 200, 200);
-  doc.line(MARGIN, y, PAGE_W - MARGIN, y);
-  y += 6;
-  addText(doc, '— End of Report —', PAGE_W / 2, y, { size: 10, color: MUTED, align: 'center' });
-  y += 8;
-  addText(doc, 'Generated by Soliton — Browser-based Hydraulic Design Tool', PAGE_W / 2, y, { size: 8, color: [180, 180, 180], align: 'center' });
-  addText(doc, 'EPANET 2.2 (WebAssembly) | No server, no license, no installation', PAGE_W / 2, y + 5, { size: 8, color: [180, 180, 180], align: 'center' });
-
   addPageFooter(doc, pageNum.n);
+
+  // ═══════════════════════════════════════════
+  // DATA SOURCES ANNEXURE (NEW)
+  // ═══════════════════════════════════════════
+  doc.addPage();
+  pageNum.n++;
+  renderAnnexuresPage(doc, pageNum, model, 'A');
+
+  // ═══════════════════════════════════════════
+  // CERTIFICATION (NEW — last page)
+  // ═══════════════════════════════════════════
+  doc.addPage();
+  pageNum.n++;
+  renderCertificationPage(doc, pageNum, model);
 
   // ═══════════════════════════════════════════
   // SAVE

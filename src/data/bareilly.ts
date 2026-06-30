@@ -17,7 +17,7 @@
  * 3. "Ramganga Phase 1" — WTP + transmission + central
  */
 
-import type { NetworkModel, DemandPattern } from '../model/types';
+import type { NetworkModel, DemandPattern, CityMetadata } from '../model/types';
 import { defaultOptions, defaultDesignCriteria, defaultQualitySettings } from '../model/types';
 import { DEFAULT_DIURNAL_PATTERN } from '../model/demand';
 
@@ -25,6 +25,22 @@ const BAREILLY_CENTER = { lat: 28.3670, lng: 79.4304 };
 const WTP_LAT = 28.4000;
 const WTP_LNG = 79.3800;
 const SPREAD = 3.0;
+
+const BAREILLY_METADATA: CityMetadata = {
+  cityName: 'Bareilly',
+  stateName: 'Uttar Pradesh',
+  stateGovernment: 'Government of Uttar Pradesh',
+  implementingAgency: 'UP Jal Nigam',
+  municipalBody: 'Nagar Nigam Bareilly',
+  missionName: 'AMRUT 2.0',
+  cityClass: 'Class I',
+  populationLakhs: 10,
+  growthRatePct: 2.5,
+  waterSource: 'Ramganga River',
+  sourceType: 'river',
+  wtpCapacityMLD: 80,
+  dprRefPrefix: 'BLY',
+};
 
 function sp(lng: number, lat: number): { x: number; y: number } {
   return {
@@ -178,6 +194,7 @@ export function createBareillyNetwork(scenario: BareillyScenario = 'full-city'):
 
   return {
     title: `Bareilly AMRUT 2.0 — ${BAREILLY_SCENARIO_LABELS[scenario]}`,
+    cityMetadata: BAREILLY_METADATA,
     junctions: activeJunctions,
     reservoirs,
     tanks: scenario === 'ramganga-phase1' ? [tanks[0]] : tanks,
