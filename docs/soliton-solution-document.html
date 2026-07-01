@@ -1,0 +1,2056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soliton — Smart Water Network Design Platform | Solution Document</title>
+<style>
+  @page {
+    size: A4;
+    margin: 15mm 18mm 15mm 18mm;
+  }
+
+  @page :first {
+    margin-top: 15mm;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #1a1a1a;
+    background: #fff;
+    max-width: 210mm;
+    margin: 0 auto;
+    padding: 20mm 18mm;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Helvetica Neue', 'Arial', sans-serif;
+    color: #0a2540;
+  }
+
+  /* ---- COVER PAGE ---- */
+  .cover-page {
+    page-break-after: always;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 30mm 10mm 20mm 10mm;
+  }
+
+  .cover-page .logo-area {
+    margin-bottom: 20mm;
+  }
+
+  .cover-page .logo-area h1 {
+    font-size: 36pt;
+    font-weight: 800;
+    color: #0a2540;
+    letter-spacing: 4px;
+    margin-bottom: 4mm;
+  }
+
+  .cover-page .logo-area .tagline {
+    font-size: 13pt;
+    color: #4a6fa5;
+    font-style: italic;
+    letter-spacing: 1px;
+  }
+
+  .cover-page .doc-title {
+    font-size: 20pt;
+    color: #0a2540;
+    font-weight: 700;
+    margin-bottom: 6mm;
+    line-height: 1.3;
+  }
+
+  .cover-page .doc-subtitle {
+    font-size: 13pt;
+    color: #333;
+    margin-bottom: 12mm;
+    line-height: 1.4;
+  }
+
+  .cover-page .meta-table {
+    font-size: 10pt;
+    color: #555;
+    border-collapse: collapse;
+    margin-top: 10mm;
+  }
+
+  .cover-page .meta-table td {
+    padding: 2mm 5mm;
+    text-align: left;
+  }
+
+  .cover-page .meta-table td:first-child {
+    font-weight: 700;
+    color: #0a2540;
+    text-align: right;
+    padding-right: 8mm;
+  }
+
+  .cover-page .gov-line {
+    font-size: 10pt;
+    color: #888;
+    margin-top: 8mm;
+    border-top: 0.5pt solid #ccc;
+    padding-top: 4mm;
+  }
+
+  /* ---- TOC ---- */
+  .toc-page {
+    page-break-after: always;
+  }
+
+  .toc-page h2 {
+    font-size: 18pt;
+    margin-bottom: 8mm;
+    border-bottom: 2pt solid #0a2540;
+    padding-bottom: 3mm;
+  }
+
+  .toc-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .toc-list li {
+    padding: 2mm 0;
+    border-bottom: 0.5pt dotted #ccc;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .toc-list li .toc-num {
+    font-weight: 700;
+    color: #0a2540;
+    margin-right: 3mm;
+    min-width: 8mm;
+  }
+
+  .toc-list li .toc-title {
+    flex: 1;
+  }
+
+  .toc-list li .toc-page-num {
+    color: #888;
+    min-width: 8mm;
+    text-align: right;
+  }
+
+  .toc-list .toc-section {
+    font-weight: 700;
+    font-size: 11.5pt;
+    padding-top: 4mm;
+    border-bottom: none;
+  }
+
+  /* ---- SECTION PAGES ---- */
+  .section {
+    page-break-before: always;
+  }
+
+  .section-header {
+    background: linear-gradient(135deg, #0a2540, #1a4a7a);
+    color: #fff;
+    padding: 8mm 18mm;
+    margin: 0 0 8mm 0;
+    page-break-after: avoid;
+    page-break-inside: avoid;
+  }
+
+  .section-header .section-num {
+    font-size: 12pt;
+    opacity: 0.7;
+    margin-bottom: 2mm;
+    display: block;
+  }
+
+  .section-header h2 {
+    font-size: 22pt;
+    color: #fff;
+    margin: 0;
+  }
+
+  .section-header .section-subtitle {
+    font-size: 11pt;
+    opacity: 0.85;
+    margin-top: 2mm;
+  }
+
+  /* ---- FEATURE PAGES ---- */
+  .feature {
+    margin-bottom: 10mm;
+    padding-bottom: 8mm;
+    border-bottom: 0.5pt solid #e0e0e0;
+  }
+
+  .feature:last-child {
+    border-bottom: none;
+  }
+
+  .feature h3 {
+    font-size: 14pt;
+    color: #0a2540;
+    margin-bottom: 3mm;
+    padding-bottom: 2mm;
+    border-bottom: 1.5pt solid #4a6fa5;
+  }
+
+  .feature h4 {
+    font-size: 11pt;
+    color: #4a6fa5;
+    margin: 4mm 0 2mm 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .feature p {
+    margin-bottom: 3mm;
+    text-align: justify;
+  }
+
+  .screenshot-placeholder {
+    background: #f5f7fa;
+    border: 1.5pt dashed #b0c4de;
+    border-radius: 3mm;
+    padding: 15mm 10mm;
+    text-align: center;
+    margin: 5mm 0;
+    color: #6a8bb5;
+    font-family: 'Arial', sans-serif;
+    font-size: 10pt;
+    page-break-inside: avoid;
+  }
+
+  .screenshot-placeholder .icon {
+    font-size: 24pt;
+    display: block;
+    margin-bottom: 3mm;
+  }
+
+  .screenshot-placeholder .instruction {
+    font-size: 9pt;
+    color: #999;
+    margin-top: 2mm;
+  }
+
+  /* Actual screenshot images */
+  .screenshot-img {
+    width: 100%;
+    border: 1pt solid #d0d0d0;
+    border-radius: 2mm;
+    margin: 5mm 0;
+    box-shadow: 0 1mm 3mm rgba(0,0,0,0.1);
+  }
+
+  /* ---- INFO BOXES ---- */
+  .benefit-box {
+    background: #e8f4e8;
+    border-left: 3pt solid #2e7d32;
+    padding: 4mm 6mm;
+    margin: 4mm 0;
+    border-radius: 0 2mm 2mm 0;
+    page-break-inside: avoid;
+  }
+
+  .benefit-box .label {
+    font-weight: 700;
+    color: #2e7d32;
+    font-family: 'Arial', sans-serif;
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .usecase-box {
+    background: #e3f2fd;
+    border-left: 3pt solid #1565c0;
+    padding: 4mm 6mm;
+    margin: 4mm 0;
+    border-radius: 0 2mm 2mm 0;
+    page-break-inside: avoid;
+  }
+
+  .usecase-box .label {
+    font-weight: 700;
+    color: #1565c0;
+    font-family: 'Arial', sans-serif;
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .highlight-box {
+    background: #fff8e1;
+    border-left: 3pt solid #f9a825;
+    padding: 4mm 6mm;
+    margin: 4mm 0;
+    border-radius: 0 2mm 2mm 0;
+    page-break-inside: avoid;
+  }
+
+  .highlight-box .label {
+    font-weight: 700;
+    color: #f57f17;
+    font-family: 'Arial', sans-serif;
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ---- TABLES ---- */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 4mm 0;
+    font-size: 10pt;
+    page-break-inside: avoid;
+  }
+
+  table th {
+    background: #0a2540;
+    color: #fff;
+    padding: 3mm 4mm;
+    text-align: left;
+    font-family: 'Arial', sans-serif;
+    font-size: 9.5pt;
+    font-weight: 600;
+  }
+
+  table td {
+    padding: 2.5mm 4mm;
+    border-bottom: 0.5pt solid #e0e0e0;
+  }
+
+  table tr:nth-child(even) td {
+    background: #f9fafb;
+  }
+
+  /* ---- LISTS ---- */
+  ul, ol {
+    margin-left: 6mm;
+    margin-bottom: 3mm;
+  }
+
+  li {
+    margin-bottom: 1.5mm;
+  }
+
+  /* ---- FOOTER ---- */
+  .page-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 8pt;
+    color: #999;
+    padding: 3mm 0;
+    font-family: 'Arial', sans-serif;
+  }
+
+  /* ---- COMPARISON TABLE ---- */
+  .comparison-highlight {
+    background: #e8f4e8;
+    font-weight: 700;
+    color: #2e7d32;
+  }
+
+  /* ---- PRINT SPECIFIC ---- */
+  @media print {
+    body {
+      padding: 0;
+      max-width: none;
+    }
+
+    .section-header {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .benefit-box, .usecase-box, .highlight-box {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    table th {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .comparison-highlight {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .roadmap-dot {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5mm;
+  }
+
+  .spec-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .spec-list li {
+    padding: 1.5mm 0;
+    border-bottom: 0.5pt dotted #ddd;
+  }
+
+  .spec-list li strong {
+    color: #0a2540;
+  }
+
+  .roadmap-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 5mm;
+    padding-left: 3mm;
+  }
+
+  .roadmap-dot {
+    width: 4mm;
+    height: 4mm;
+    border-radius: 50%;
+    background: #4a6fa5;
+    margin-right: 4mm;
+    margin-top: 2mm;
+    flex-shrink: 0;
+  }
+
+  .roadmap-dot.done { background: #2e7d32; }
+  .roadmap-dot.next { background: #f9a825; }
+  .roadmap-dot.future { background: #b0c4de; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- COVER PAGE -->
+<!-- ============================================================ -->
+<div class="cover-page">
+  <div class="logo-area">
+    <h1>SOLITON</h1>
+    <div class="tagline">Smart Water Network Design Platform</div>
+  </div>
+
+  <div class="doc-title">
+    Solution Document<br>
+    Intelligent Water Distribution Network<br>
+    Design &amp; Analysis Platform
+  </div>
+
+  <div class="doc-subtitle">
+    Submitted to<br>
+    <strong>Ayodhya Jal Nigam / Ayodhya Nagar Nigam</strong><br>
+    Under AMRUT 2.0 Mission — 24×7 Pressurised Water Supply with Drink from Tap
+  </div>
+
+  <table class="meta-table">
+    <tr><td>Prepared by</td><td>Cognecto Private Limited</td></tr>
+    <tr><td>Document Reference</td><td>COG/AYD/SOL/2026-001</td></tr>
+    <tr><td>Date</td><td>July 2026</td></tr>
+    <tr><td>Version</td><td>1.0</td></tr>
+    <tr><td>Classification</td><td>For Official Use</td></tr>
+  </table>
+
+  <div class="gov-line">
+    Government of Uttar Pradesh &nbsp;|&nbsp; UP Jal Nigam &nbsp;|&nbsp; AMRUT 2.0 Mission
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TABLE OF CONTENTS -->
+<!-- ============================================================ -->
+<div class="toc-page">
+  <h2>Table of Contents</h2>
+  <ol class="toc-list">
+    <li class="toc-section"><span class="toc-num">1</span><span class="toc-title">Executive Summary</span></li>
+    <li class="toc-section"><span class="toc-num">2</span><span class="toc-title">Problem Statement — Water Distribution Challenges in Ayodhya</span></li>
+    <li class="toc-section"><span class="toc-num">3</span><span class="toc-title">Solution Overview — The Soliton Platform</span></li>
+    <li class="toc-section"><span class="toc-num">4</span><span class="toc-title">Feature Catalog</span></li>
+    <li>
+      <span class="toc-num">4.1</span><span class="toc-title">Interactive Map-Based Network Design</span>
+    </li>
+    <li>
+      <span class="toc-num">4.2</span><span class="toc-title">Network Element Placement (Junctions, Reservoirs, Tanks)</span>
+    </li>
+    <li>
+      <span class="toc-num">4.3</span><span class="toc-title">Pipe Drawing with Vertex Support</span>
+    </li>
+    <li>
+      <span class="toc-num">4.4</span><span class="toc-title">Pump &amp; Valve Modeling</span>
+    </li>
+    <li>
+      <span class="toc-num">4.5</span><span class="toc-title">EPANET 2.2 Hydraulic Simulation Engine</span>
+    </li>
+    <li>
+      <span class="toc-num">4.6</span><span class="toc-title">Real-Time Results Visualization on Map</span>
+    </li>
+    <li>
+      <span class="toc-num">4.7</span><span class="toc-title">Results Dashboard — Comprehensive Analysis</span>
+    </li>
+    <li>
+      <span class="toc-num">4.8</span><span class="toc-title">CPHEEO Design Criteria Compliance</span>
+    </li>
+    <li>
+      <span class="toc-num">4.9</span><span class="toc-title">Diurnal Demand Pattern Editor</span>
+    </li>
+    <li>
+      <span class="toc-num">4.10</span><span class="toc-title">Fire Demand Analysis</span>
+    </li>
+    <li>
+      <span class="toc-num">4.11</span><span class="toc-title">Extended Period Simulation (EPS) — 24-Hour Analysis</span>
+    </li>
+    <li>
+      <span class="toc-num">4.12</span><span class="toc-title">Scenario Management — Save, Load &amp; Compare</span>
+    </li>
+    <li>
+      <span class="toc-num">4.13</span><span class="toc-title">Non-Revenue Water (NRW) Analysis</span>
+    </li>
+    <li>
+      <span class="toc-num">4.14</span><span class="toc-title">Cost Estimation</span>
+    </li>
+    <li>
+      <span class="toc-num">4.15</span><span class="toc-title">Export &amp; Reporting — CSV, INP, DPR</span>
+    </li>
+    <li>
+      <span class="toc-num">4.16</span><span class="toc-title">Criticality (N-1) Analysis</span>
+    </li>
+    <li>
+      <span class="toc-num">4.17</span><span class="toc-title">OZ / DMA Zone Delineation</span>
+    </li>
+    <li>
+      <span class="toc-num">4.18</span><span class="toc-title">Digital Twin &amp; SCADA Integration</span>
+    </li>
+    <li class="toc-section"><span class="toc-num">5</span><span class="toc-title">Ayodhya — Pre-Built Demonstration</span></li>
+    <li class="toc-section"><span class="toc-num">6</span><span class="toc-title">CPHEEO Compliance Matrix</span></li>
+    <li class="toc-section"><span class="toc-num">7</span><span class="toc-title">Competitive Advantage — Soliton vs. Traditional Tools</span></li>
+    <li class="toc-section"><span class="toc-num">8</span><span class="toc-title">Deployment &amp; Infrastructure Requirements</span></li>
+    <li class="toc-section"><span class="toc-num">9</span><span class="toc-title">Technology Roadmap</span></li>
+    <li class="toc-section"><span class="toc-num">10</span><span class="toc-title">About Cognecto Private Limited</span></li>
+  </ol>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 1: EXECUTIVE SUMMARY -->
+<!-- ============================================================ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">Section 1</span>
+    <h2>Executive Summary</h2>
+  </div>
+
+  <p>
+    <strong>Soliton</strong> is a browser-based, intelligent water distribution network design and analysis platform
+    built specifically for Indian municipal water utilities. It brings the power of EPANET 2.2 — the globally trusted
+    hydraulic simulation engine — directly into a modern web application that requires no installation, no server
+    infrastructure, and no recurring licence fees.
+  </p>
+
+  <p>
+    Designed with <strong>CPHEEO 2023 (4th Edition) — Manual on Water Supply and Treatment Systems (Drink from Tap)</strong>
+    guidelines at its core, Soliton enables municipal engineers and consultants to design, simulate, analyse, and report
+    on water distribution networks with full compliance to Indian design standards, including water quality simulation
+    for IS 10500:2012 (Drinking Water Specification) assurance at the consumer's tap.
+  </p>
+
+  <p>
+    For Ayodhya, Soliton comes pre-loaded with three AMRUT 2.0 scenarios covering 24×7 water supply in 11 wards,
+    selective DMA pilots, and Saryu River source augmentation — ready for immediate review, modification, and
+    submission as part of the Detailed Project Report (DPR) process.
+  </p>
+
+  <div class="highlight-box">
+    <div class="label">Key Value Proposition</div>
+    <ul>
+      <li><strong>Zero infrastructure cost</strong> — runs entirely in a web browser, no servers needed</li>
+      <li><strong>Zero licence fee</strong> — built on open-source EPANET 2.2 engine</li>
+      <li><strong>CPHEEO 2023 compliant</strong> — all design criteria from the "Drink from Tap" manual built-in and verifiable</li>
+      <li><strong>Drink from Tap ready</strong> — water quality simulation (chlorine decay, water age) ensures IS 10500:2012 compliance at consumer tap</li>
+      <li><strong>Ayodhya-ready</strong> — pre-built network models with OZ/DMA design for immediate use</li>
+      <li><strong>Government-grade exports</strong> — DPR-format PDF reports for AMRUT 2.0 submissions</li>
+      <li><strong>Digital Twin ready</strong> — architecture supports live SCADA/IoT integration for 24×7 PWSS operations</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 2: PROBLEM STATEMENT -->
+<!-- ============================================================ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">Section 2</span>
+    <h2>Problem Statement</h2>
+    <div class="section-subtitle">Water Distribution Challenges in Ayodhya</div>
+  </div>
+
+  <p>
+    Ayodhya, a Class I city in Uttar Pradesh with a population of approximately 5.5 lakh (projected to grow at 2.5% per annum),
+    faces significant challenges in its water distribution infrastructure:
+  </p>
+
+  <h3 style="margin: 5mm 0 3mm 0; font-size: 12pt;">Current Challenges</h3>
+
+  <table>
+    <tr>
+      <th style="width: 30%;">Challenge</th>
+      <th>Impact</th>
+    </tr>
+    <tr>
+      <td><strong>Intermittent supply</strong></td>
+      <td>Most wards receive water for only 2–4 hours per day, leading to contamination risk from negative pressures during non-supply hours and inequitable distribution across wards.</td>
+    </tr>
+    <tr>
+      <td><strong>High Non-Revenue Water</strong></td>
+      <td>Estimated NRW exceeding 40% — well above the AMRUT 2.0 target of &lt;20%. Physical losses from aging pipelines and commercial losses from unmetered connections.</td>
+    </tr>
+    <tr>
+      <td><strong>Pilgrimage demand surges</strong></td>
+      <td>Ram Janmabhoomi temple and Saryu ghats create demand spikes of 2–3× baseline during festivals and religious events. Existing network cannot accommodate peak-hour demand.</td>
+    </tr>
+    <tr>
+      <td><strong>Aging infrastructure</strong></td>
+      <td>Much of the distribution network predates modern design standards. Undersized pipes in peripheral wards result in pressure deficiency at consumer endpoints.</td>
+    </tr>
+    <tr>
+      <td><strong>Lack of design tools</strong></td>
+      <td>Hydraulic analysis currently requires expensive proprietary software (WaterGEMS, WaterCAD) with annual licence costs of ₹5–15 lakh, limiting access for municipal engineering teams.</td>
+    </tr>
+    <tr>
+      <td><strong>No real-time monitoring</strong></td>
+      <td>Absence of integrated SCADA/telemetry system makes it impossible to detect leaks, pressure drops, or supply failures in real-time.</td>
+    </tr>
+  </table>
+
+  <div class="benefit-box" style="margin-top: 6mm;">
+    <div class="label">AMRUT 2.0 Mandate</div>
+    <p>
+      Under AMRUT 2.0, Ayodhya is mandated to achieve 24×7 Pressurised Water Supply System (PWSS) with
+      "Drink from Tap" facility meeting IS 10500:2012, through Operational Zones (OZs) and District Metering Areas (DMAs),
+      reduce NRW below 20%, ensure 100% consumer metering, and submit Detailed Project Reports (DPRs) with hydraulic
+      and water quality analysis for central funding approval.
+      <strong>Soliton directly addresses each of these requirements.</strong>
+    </p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 3: SOLUTION OVERVIEW -->
+<!-- ============================================================ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">Section 3</span>
+    <h2>Solution Overview</h2>
+    <div class="section-subtitle">The Soliton Platform</div>
+  </div>
+
+  <p>
+    Soliton is a complete water distribution network design, simulation, and analysis platform that runs
+    entirely within a standard web browser. It combines the hydraulic accuracy of EPANET 2.2 with a modern,
+    map-based user interface purpose-built for Indian municipal applications.
+  </p>
+
+  <h3 style="margin: 6mm 0 3mm 0; font-size: 12pt;">Architecture</h3>
+
+  <img src="architecture-diagram.png" alt="Soliton Architecture Diagram" class="screenshot-img">
+
+  <table>
+    <tr>
+      <th style="width: 25%;">Layer</th>
+      <th style="width: 30%;">Technology</th>
+      <th>Purpose</th>
+    </tr>
+    <tr>
+      <td><strong>User Interface</strong></td>
+      <td>React + MapLibre GL</td>
+      <td>Interactive map-based network design with satellite imagery, drawing tools, and property editing</td>
+    </tr>
+    <tr>
+      <td><strong>State Management</strong></td>
+      <td>Zustand + Zundo</td>
+      <td>Real-time state synchronisation with full undo/redo history</td>
+    </tr>
+    <tr>
+      <td><strong>Hydraulic Engine</strong></td>
+      <td>EPANET 2.2 (WebAssembly)</td>
+      <td>Industry-standard hydraulic solver running locally in the browser — no cloud computation needed</td>
+    </tr>
+    <tr>
+      <td><strong>Data Model</strong></td>
+      <td>TypeScript + INP Serializer</td>
+      <td>CPHEEO-compliant data types with bidirectional EPANET INP file conversion</td>
+    </tr>
+    <tr>
+      <td><strong>Export</strong></td>
+      <td>CSV, INP, HTML/PDF</td>
+      <td>Government-format DPR reports, standard EPANET files, data exports</td>
+    </tr>
+  </table>
+
+  <h3 style="margin: 6mm 0 3mm 0; font-size: 12pt;">Key Differentiators</h3>
+
+  <div class="two-col">
+    <div class="benefit-box">
+      <div class="label">No Infrastructure Required</div>
+      <p>Entire platform runs in browser. No servers to maintain, no IT infrastructure to procure. Works on any modern laptop or desktop computer.</p>
+    </div>
+    <div class="benefit-box">
+      <div class="label">Zero Licence Cost</div>
+      <p>Built on open-source EPANET 2.2 engine. No annual subscription, no per-seat licence, no vendor lock-in. Total cost of ownership: zero for software.</p>
+    </div>
+  </div>
+
+  <div class="two-col" style="margin-top: 3mm;">
+    <div class="benefit-box">
+      <div class="label">Indian Standards First</div>
+      <p>CPHEEO 2023 "Drink from Tap" criteria, IS 10500:2012, AMRUT 2.0 guidelines, and Indian municipal workflow embedded from the ground up — not adapted from foreign tools.</p>
+    </div>
+    <div class="benefit-box">
+      <div class="label">Instant Results</div>
+      <p>Hydraulic simulation completes in under 1 second for typical municipal networks. Design-compute-refine cycle takes minutes, not hours.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 4: FEATURE CATALOG -->
+<!-- ============================================================ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">Section 4</span>
+    <h2>Feature Catalog</h2>
+    <div class="section-subtitle">Complete Platform Capabilities</div>
+  </div>
+
+  <!-- 4.1 Map-Based Design -->
+  <div class="feature">
+    <h3>4.1 &nbsp; Interactive Map-Based Network Design</h3>
+
+    <p>
+      Soliton provides a full-screen interactive map canvas powered by MapLibre GL, enabling engineers to design
+      water distribution networks directly on satellite imagery or street maps of the target city. The map supports
+      smooth zooming from city-level overview down to individual pipe junctions, with automatic label display at
+      appropriate zoom levels.
+    </p>
+
+    <img src="4.1.png" alt="Interactive Map-Based Network Design" class="screenshot-img">
+
+    <h4>How It Works</h4>
+    <ul>
+      <li>Pan and zoom the map using mouse or trackpad gestures</li>
+      <li>Toggle between <strong>street map</strong> and <strong>satellite imagery</strong> basemaps</li>
+      <li>Network elements (pipes, junctions, tanks) render as interactive map layers</li>
+      <li>City boundary outlines, rivers, and major roads display as contextual overlays</li>
+      <li>Dark mode available for extended working sessions</li>
+    </ul>
+
+    <div class="benefit-box">
+      <div class="label">How This Helps</div>
+      <p>Engineers can see the actual geography — roads, buildings, rivers, terrain — while designing the network.
+        This eliminates the disconnect between schematic diagrams and real-world layout, reducing design errors
+        and ensuring pipe routes follow actual road alignments.</p>
+    </div>
+
+    <div class="usecase-box">
+      <div class="label">Where To Use</div>
+      <p><strong>DPR Preparation:</strong> Design networks on actual city maps for accurate pipe routing and length estimation.
+        <strong>Field Verification:</strong> Compare designed network against ground conditions using satellite imagery.
+        <strong>Stakeholder Presentations:</strong> Show network designs on recognisable city maps for approvals.</p>
+    </div>
+  </div>
+
+  <!-- 4.2 Element Placement -->
+  <div class="feature">
+    <h3>4.2 &nbsp; Network Element Placement</h3>
+
+    <p>
+      A dedicated toolbar provides one-click tools for placing all water network elements on the map.
+      Each element type has its own tool button with a keyboard shortcut for rapid design workflows.
+    </p>
+
+    <img src="4.2.png" alt="Network Element Placement Tools" class="screenshot-img">
+
+    <table>
+      <tr>
+        <th>Element</th>
+        <th>Shortcut</th>
+        <th>Purpose</th>
+        <th>Key Properties</th>
+      </tr>
+      <tr>
+        <td><strong>Junction</strong></td>
+        <td>J</td>
+        <td>Demand node — represents a consumer connection point</td>
+        <td>Elevation (m), Base Demand (LPS), Population</td>
+      </tr>
+      <tr>
+        <td><strong>Reservoir</strong></td>
+        <td>R</td>
+        <td>Fixed-head water source — represents WTP or river intake</td>
+        <td>Total Head (m), Head Pattern</td>
+      </tr>
+      <tr>
+        <td><strong>Tank</strong></td>
+        <td>T</td>
+        <td>Elevated storage — OHT, GLR, or ground-level tank</td>
+        <td>Elevation (m), Diameter (m), Init/Min/Max Levels (m)</td>
+      </tr>
+      <tr>
+        <td><strong>Pipe</strong></td>
+        <td>P</td>
+        <td>Conduit connecting two nodes</td>
+        <td>Length (m), Diameter (mm), Roughness (C), Material</td>
+      </tr>
+      <tr>
+        <td><strong>Pump</strong></td>
+        <td>U</td>
+        <td>Mechanical device to add energy to the system</td>
+        <td>Power (kW), Speed Factor, Speed Pattern</td>
+      </tr>
+      <tr>
+        <td><strong>Valve</strong></td>
+        <td>V</td>
+        <td>Flow/pressure control device (PRV, PSV, FCV, etc.)</td>
+        <td>Type, Setting (m or LPS), Diameter (mm)</td>
+      </tr>
+    </table>
+
+    <div class="benefit-box">
+      <div class="label">How This Helps</div>
+      <p>Rapid element placement with keyboard shortcuts means an engineer can lay out a complete network of 50+ junctions
+        in minutes rather than hours. The two-click pipe drawing tool (click source node → click destination node) automatically
+        calculates pipe length using geodesic (haversine) distance from map coordinates.</p>
+    </div>
+
+    <div class="usecase-box">
+      <div class="label">Where To Use</div>
+      <p><strong>New network design:</strong> Place junctions along road intersections, reservoirs at WTP locations, tanks at
+        elevated sites identified in ground surveys. <strong>Network extension:</strong> Add new junctions and pipes to expand
+        coverage to unserved wards.</p>
+    </div>
+  </div>
+
+  <!-- 4.3 Pipe Drawing -->
+  <div class="feature">
+    <h3>4.3 &nbsp; Pipe Drawing with Vertex Support</h3>
+
+    <p>
+      Pipes are drawn by connecting two network nodes (junctions, tanks, or reservoirs). Once placed, pipes can be
+      given intermediate vertex points to follow road curves, avoid obstacles, or match actual pipe routing from
+      field surveys. Vertices are fully interactive — drag to reshape, double-click to remove.
+    </p>
+
+    <img src="4.3.png" alt="Pipe Drawing with Vertex Support" class="screenshot-img">
+
+    <h4>Pipe Properties</h4>
+    <ul>
+      <li><strong>Length:</strong> Auto-calculated from map coordinates (haversine formula) or manually overridden</li>
+      <li><strong>Diameter:</strong> Specified in mm — common Indian sizes (100, 150, 200, 250, 300, 350, 400, 500 mm)</li>
+      <li><strong>Material:</strong> DI (Ductile Iron), HDPE, or PVC — affects roughness coefficient and cost</li>
+      <li><strong>Roughness (Hazen-Williams C):</strong> Auto-set from material (130 DI, 140 HDPE, 150 PVC)</li>
+      <li><strong>Status:</strong> Open, Closed, or Check Valve (CV) — for shutdown simulation</li>
+      <li><strong>Cost:</strong> Automatically estimated from length × material-specific cost per metre</li>
+    </ul>
+
+    <div class="benefit-box">
+      <div class="label">How This Helps</div>
+      <p>Vertex support ensures pipe routing matches actual field conditions. Auto-calculated lengths eliminate
+        manual measurement errors. Material-linked roughness coefficients enforce CPHEEO standards automatically.</p>
+    </div>
+  </div>
+
+  <!-- 4.4 Pumps & Valves -->
+  <div class="feature">
+    <h3>4.4 &nbsp; Pump &amp; Valve Modeling</h3>
+
+    <p>
+      Soliton supports modelling of pumps and all six EPANET valve types. Pumps can be specified by power (kW) or
+      performance curve, with optional speed patterns for variable-speed drives. Valves include pressure reducing
+      valves (PRV), pressure sustaining valves (PSV), flow control valves (FCV), and more — essential for DMA design.
+    </p>
+
+    <img src="4.4.png" alt="Pump and Valve Modeling" class="screenshot-img">
+
+    <table>
+      <tr>
+        <th>Valve Type</th>
+        <th>Code</th>
+        <th>Function</th>
+        <th>Ayodhya Application</th>
+      </tr>
+      <tr>
+        <td>Pressure Reducing</td>
+        <td>PRV</td>
+        <td>Limits downstream pressure to set value</td>
+        <td>DMA inlet control — prevent excess pressure in low-lying wards</td>
+      </tr>
+      <tr>
+        <td>Pressure Sustaining</td>
+        <td>PSV</td>
+        <td>Maintains minimum upstream pressure</td>
+        <td>Protect elevated zones when downstream demand is high</td>
+      </tr>
+      <tr>
+        <td>Flow Control</td>
+        <td>FCV</td>
+        <td>Limits flow to specified rate</td>
+        <td>Equitable distribution — prevent high-demand zones from starving peripheral wards</td>
+      </tr>
+      <tr>
+        <td>Throttle Control</td>
+        <td>TCV</td>
+        <td>Adjustable flow restriction</td>
+        <td>Operational control during phased supply hours</td>
+      </tr>
+    </table>
+
+    <div class="usecase-box">
+      <div class="label">Where To Use</div>
+      <p><strong>DMA design:</strong> Place PRVs at DMA inlets to control zone pressure.
+        <strong>Pump sizing:</strong> Model booster stations for elevated zones.
+        <strong>Equitable supply:</strong> Use FCVs to ensure fair distribution across wards.</p>
+    </div>
+  </div>
+
+  <!-- 4.5 EPANET Simulation -->
+  <div class="feature">
+    <h3>4.5 &nbsp; EPANET 2.2 Hydraulic Simulation Engine</h3>
+
+    <p>
+      At the heart of Soliton is the EPANET 2.2 hydraulic solver, compiled to WebAssembly (WASM) for in-browser
+      execution. EPANET is the global gold standard for water distribution network analysis, developed by the
+      US Environmental Protection Agency and used by water utilities worldwide. Soliton brings this engine
+      directly to the browser — no installation, no configuration, no server.
+    </p>
+
+    <img src="4.5.png" alt="EPANET 2.2 Hydraulic Simulation" class="screenshot-img">
+
+    <h4>Simulation Process</h4>
+    <ol>
+      <li>Engineer designs or modifies the network using drawing tools</li>
+      <li>Clicks <strong>"Compute"</strong> button in the top toolbar</li>
+      <li>Soliton automatically generates a standard EPANET INP input file from the model</li>
+      <li>EPANET WASM engine solves the hydraulic equations (typically &lt;1 second)</li>
+      <li>Results (pressure, flow, velocity, head loss) appear instantly on the map and in the dashboard</li>
+    </ol>
+
+    <h4>What Gets Calculated</h4>
+    <div class="two-col">
+      <div>
+        <strong>At Each Node (Junction/Tank):</strong>
+        <ul>
+          <li>Pressure (metres of water column)</li>
+          <li>Hydraulic head (metres)</li>
+          <li>Demand served (litres per second)</li>
+        </ul>
+      </div>
+      <div>
+        <strong>At Each Link (Pipe/Pump/Valve):</strong>
+        <ul>
+          <li>Flow rate (litres per second)</li>
+          <li>Velocity (metres per second)</li>
+          <li>Head loss (metres per km)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="highlight-box" style="margin-top: 4mm;">
+      <div class="label">Engineering Integrity Guarantee</div>
+      <p>Every hydraulic number displayed in Soliton comes directly from the EPANET 2.2 solver.
+        No values are fabricated, interpolated, or estimated. An expert hydraulic engineer can verify every result
+        by examining the generated INP file in any standard EPANET application.</p>
+    </div>
+  </div>
+
+  <!-- 4.6 Results on Map -->
+  <div class="feature">
+    <h3>4.6 &nbsp; Real-Time Results Visualization on Map</h3>
+
+    <p>
+      After simulation, results appear directly on the map as colour-coded overlays. Engineers can instantly
+      identify problem areas — low-pressure zones, high-velocity pipes, undersized mains — without switching
+      between views or reading raw data tables.
+    </p>
+
+    <img src="4.6.png" alt="Results Visualization on Map" class="screenshot-img">
+
+    <h4>Visual Indicators</h4>
+    <table>
+      <tr>
+        <th>Element</th>
+        <th>Color</th>
+        <th>Meaning</th>
+      </tr>
+      <tr>
+        <td>Junction (node)</td>
+        <td style="color: #2e7d32;">● Green</td>
+        <td>Pressure ≥ CPHEEO minimum floor (17m) — PASS</td>
+      </tr>
+      <tr>
+        <td>Junction (node)</td>
+        <td style="color: #c62828;">● Red</td>
+        <td>Pressure &lt; minimum floor — FAIL (requires intervention)</td>
+      </tr>
+      <tr>
+        <td>Pipe (link)</td>
+        <td style="color: #2e7d32;">— Green</td>
+        <td>Velocity in economic band (1.0–1.5 m/s) — OPTIMAL</td>
+      </tr>
+      <tr>
+        <td>Pipe (link)</td>
+        <td style="color: #ef6c00;">— Orange</td>
+        <td>Velocity in permissible range (0.6–2.5 m/s) — OK</td>
+      </tr>
+      <tr>
+        <td>Pipe (link)</td>
+        <td style="color: #c62828;">— Red</td>
+        <td>Velocity outside permissible range — FAIL</td>
+      </tr>
+      <tr>
+        <td>Pipe (link)</td>
+        <td style="color: #9e9e9e;">— Grey (dashed)</td>
+        <td>Pipe is closed / shut down</td>
+      </tr>
+    </table>
+
+    <p>
+      Pressure values (in metres) appear as labels at each node when zoomed in, with green text for passing and
+      red text for failing values. Flow rates and pipe IDs appear on pipes at higher zoom levels.
+    </p>
+
+    <div class="benefit-box">
+      <div class="label">How This Helps</div>
+      <p>A single glance at the map tells the engineer where the network is performing well and where it needs attention.
+        Red clusters on the periphery of Ayodhya immediately highlight the wards that need pipe upsizing or additional
+        supply points — exactly the information needed for DPR justification.</p>
+    </div>
+  </div>
+
+  <!-- 4.7 Results Dashboard -->
+  <div class="feature">
+    <h3>4.7 &nbsp; Results Dashboard — Comprehensive Analysis</h3>
+
+    <p>
+      The resizable bottom panel provides detailed tabular analysis of simulation results, organized into
+      four tabs: Nodes, Links, Tanks, and NRW (Non-Revenue Water). Each table is sortable by any column,
+      allowing engineers to quickly find the worst-performing elements.
+    </p>
+
+    <img src="4.7.png" alt="Results Dashboard" class="screenshot-img">
+
+    <h4>Dashboard Components</h4>
+
+    <p><strong>Headline Summary Bar:</strong> At the top of the dashboard, a colour-coded summary shows at a glance:</p>
+    <ul>
+      <li>Pressure compliance: "85% pass (34/40 junctions)" with green/yellow/red indicator</li>
+      <li>Velocity compliance: "28/35 pipes in band"</li>
+      <li>NRW: "18% (AMRUT target: &lt;20%)"</li>
+      <li>Simulation mode badge: "Steady State" or "EPS 24-hour"</li>
+    </ul>
+
+    <p><strong>Nodes Tab:</strong> Every junction listed with elevation, calculated pressure, head, demand, and PASS/FAIL status against CPHEEO pressure floor.</p>
+
+    <p><strong>Links Tab:</strong> Every pipe listed with length, diameter, flow, velocity, head loss, and velocity status (OPTIMAL/OK/FAIL).</p>
+
+    <p><strong>Tanks Tab:</strong> For Extended Period Simulation, displays tank water level charts over 24 hours — showing fill and drain cycles, ensuring tanks do not overflow or empty completely.</p>
+
+    <div class="usecase-box">
+      <div class="label">Where To Use</div>
+      <p><strong>Design review:</strong> Sort by pressure ascending to find the most deficient nodes.
+        <strong>Pipe sizing:</strong> Sort by velocity to identify undersized or oversized pipes.
+        <strong>DPR annexure:</strong> Export tables directly as CSV for inclusion in DPR appendices.</p>
+    </div>
+  </div>
+
+  <!-- 4.8 CPHEEO Compliance -->
+  <div class="feature">
+    <h3>4.8 &nbsp; CPHEEO Design Criteria Compliance</h3>
+
+    <p>
+      Soliton embeds CPHEEO 2023 (4th Edition — "Drink from Tap") design criteria as configurable parameters.
+      Every simulation result is automatically checked against these criteria, and non-compliant elements are flagged
+      immediately. Engineers can adjust criteria for different city classes and design scenarios.
+    </p>
+
+    <img src="4.8.png" alt="CPHEEO Design Criteria Settings" class="screenshot-img">
+
+    <table>
+      <tr>
+        <th>Parameter</th>
+        <th>Default Value</th>
+        <th>CPHEEO Reference</th>
+        <th>Adjustable?</th>
+      </tr>
+      <tr>
+        <td>Per-capita supply (LPCD)</td>
+        <td>135</td>
+        <td>CPHEEO 2023 Ch. 16.12, Class I city with sewerage</td>
+        <td>Yes — presets for 70/100/135/150</td>
+      </tr>
+      <tr>
+        <td>Residual pressure floor</td>
+        <td>17–21 metres</td>
+        <td>CPHEEO 2023 Ch. 12.14.2 (24×7 DMA target)</td>
+        <td>Yes — presets for 7m (1-storey), 12m (2-storey), 17m (3-storey/DMA)</td>
+      </tr>
+      <tr>
+        <td>Pipe velocity (permissible)</td>
+        <td>0.6 – 2.5 m/s</td>
+        <td>CPHEEO 2023 Ch. 12.11</td>
+        <td>Yes</td>
+      </tr>
+      <tr>
+        <td>Pipe velocity (economic)</td>
+        <td>1.0 – 1.5 m/s</td>
+        <td>CPHEEO recommended range</td>
+        <td>Yes</td>
+      </tr>
+      <tr>
+        <td>Hazen-Williams C</td>
+        <td>130 (DI) / 150 (HDPE/PVC)</td>
+        <td>CPHEEO 2023 Ch. 6.5.1.4</td>
+        <td>Yes — per material</td>
+      </tr>
+      <tr>
+        <td>Peak factor</td>
+        <td>2.5</td>
+        <td>CPHEEO 2023 Ch. 16.16</td>
+        <td>Yes</td>
+      </tr>
+      <tr>
+        <td>NRW target</td>
+        <td>&lt;20%</td>
+        <td>AMRUT 2.0</td>
+        <td>Yes</td>
+      </tr>
+      <tr>
+        <td>Design period</td>
+        <td>30 years</td>
+        <td>CPHEEO 2023 Ch. 16.8</td>
+        <td>Yes</td>
+      </tr>
+    </table>
+
+    <div class="benefit-box">
+      <div class="label">How This Helps</div>
+      <p>Built-in compliance checking eliminates the need for manual verification against design standards.
+        Every simulation result is automatically graded PASS or FAIL against the configured criteria.
+        DPR reviewers can verify compliance at a glance, accelerating the approval process.</p>
+    </div>
+  </div>
+
+  <!-- 4.9 Demand Pattern Editor -->
+  <div class="feature">
+    <h3>4.9 &nbsp; Diurnal Demand Pattern Editor</h3>
+
+    <p>
+      Water demand varies throughout the day — morning peaks for bathing, midday lull, evening cooking peaks.
+      Soliton provides an interactive 24-hour bar chart where engineers can drag individual hourly multipliers
+      to define the diurnal demand pattern. Pre-built patterns include the CPHEEO default, flat (uniform), and
+      commercial profiles.
+    </p>
+
+    <img src="4.9.png" alt="Diurnal Demand Pattern Editor" class="screenshot-img">
+
+    <h4>How It Works</h4>
+    <ul>
+      <li>Each bar represents one hour (0:00 to 23:00)</li>
+      <li>Bar height is the demand multiplier — 1.0 = average demand, 2.5 = peak</li>
+      <li>Drag any bar to adjust — the pattern auto-validates to ensure consistency</li>
+      <li>Average multiplier indicator warns if pattern average deviates from 1.0</li>
+      <li>Pattern is applied in Extended Period Simulation (EPS) to model realistic 24-hour demand variation</li>
+    </ul>
+
+    <div class="benefit-box">
+      <div class="label">How This Helps</div>
+      <p>Realistic demand modelling is critical for 24×7 supply design. The pattern editor lets engineers model
+        Ayodhya-specific demand peaks — including early morning bathing at Saryu ghats and temple visit surges —
+        ensuring the network is designed for actual usage patterns, not just average demand.</p>
+    </div>
+
+    <div class="usecase-box">
+      <div class="label">Where To Use</div>
+      <p><strong>24×7 DMA design:</strong> Verify tank capacity and pipe sizing handle peak-hour demand.
+        <strong>Pilgrimage events:</strong> Model demand spikes during Deepotsav, Ram Navami with custom patterns.
+        <strong>Industrial zones:</strong> Apply commercial demand profiles for non-residential areas.</p>
+    </div>
+  </div>
+
+  <!-- 4.10 Fire Demand -->
+  <div class="feature">
+    <h3>4.10 &nbsp; Fire Demand Analysis</h3>
+
+    <p>
+      Municipal water networks must be designed to handle simultaneous domestic demand plus fire-fighting requirements.
+      Soliton calculates fire demand using the Kuichling formula (Q = 100√P LPM) as specified in CPHEEO guidelines,
+      and provides fire flow analysis to identify junctions that cannot sustain fire-fighting operations.
+    </p>
+
+    <img src="4.10.png" alt="Fire Demand Analysis" class="screenshot-img">
+
+    <h4>Fire Demand Calculator</h4>
+    <ul>
+      <li>Input: City population (in thousands)</li>
+      <li>Output: Fire flow requirement (LPS and M³/hour)</li>
+      <li>Hydrant count estimate (at 1000 LPM per hydrant)</li>
+      <li>Fire flow analysis tests each junction under simultaneous peak + fire demand</li>
+      <li>Identifies junctions that fail to maintain minimum pressure during fire events</li>
+    </ul>
+
+    <div class="usecase-box">
+      <div class="label">Where To Use</div>
+      <p><strong>Fire safety compliance:</strong> Verify network can sustain fire-fighting at high-density zones (temple area, market area).
+        <strong>Hydrant placement:</strong> Identify optimal locations for fire hydrants based on available flow and pressure.
+        <strong>DPR annexure:</strong> Document fire demand compliance for municipal fire department sign-off.</p>
+    </div>
+  </div>
+
+  <!-- 4.11 EPS -->
+  <div class="feature">
+    <h3>4.11 &nbsp; Extended Period Simulation (EPS) — 24-Hour Analysis</h3>
+
+    <p>
+      While steady-state analysis provides a snapshot, EPS simulates the network over a full 24-hour period
+      with time-varying demands, tank level changes, and operational rules. This is essential for 24×7 supply
+      design, where tank fill/drain cycles, pump schedules, and peak-hour performance must be verified.
+    </p>
+
+    <img src="4.11.png" alt="Extended Period Simulation" class="screenshot-img">
+
+    <h4>EPS Capabilities</h4>
+    <ul>
+      <li>Simulate 24-hour network behaviour with hourly timesteps</li>
+      <li>Time slider to scrub through results — see pressure/flow at any hour</li>
+      <li>Tank level charts show fill and drain cycles over 24 hours</li>
+      <li>Verify tanks do not overflow or run dry during peak demand periods</li>
+      <li>Operational rules: automatically open/close pumps based on tank levels</li>
+      <li>Water quality simulation for "Drink from Tap" compliance: track water age (IS 10500:2012 freshness), chlorine residual decay (minimum 0.2 mg/L at consumer tap), and source tracing</li>
+    </ul>
+
+    <div class="benefit-box">
+      <div class="label">How This Helps</div>
+      <p>24×7 water supply requires proving that the network performs throughout the day, not just at average demand.
+        EPS reveals critical vulnerabilities — tanks that empty during morning peak, pipes that exceed velocity limits
+        during high-demand hours, zones that lose pressure overnight. This is the analysis AMRUT reviewers look for.</p>
+    </div>
+  </div>
+
+  <!-- 4.12 Scenario Management -->
+  <div class="feature">
+    <h3>4.12 &nbsp; Scenario Management — Save, Load &amp; Compare</h3>
+
+    <p>
+      Engineers need to explore multiple design alternatives — different pipe sizes, tank locations, DMA configurations.
+      Soliton provides scenario management that saves complete network states, loads them for comparison, and
+      shows side-by-side performance metrics.
+    </p>
+
+    <img src="4.12.png" alt="Scenario Management" class="screenshot-img">
+
+    <h4>Scenario Operations</h4>
+    <ul>
+      <li><strong>Save:</strong> Capture current network design + settings as a named scenario</li>
+      <li><strong>Load:</strong> Restore any previously saved scenario for further editing</li>
+      <li><strong>Compare:</strong> Side-by-side dashboard showing metrics of two selected scenarios</li>
+      <li><strong>Export/Import:</strong> Share scenarios as JSON files between engineers or offices</li>
+      <li><strong>Delete:</strong> Remove outdated scenarios to keep workspace clean</li>
+    </ul>
+
+    <div class="usecase-box">
+      <div class="label">Where To Use</div>
+      <p><strong>Option appraisal:</strong> Compare "24×7 in 11 wards" vs "24×7 in 4 DMAs" — which achieves better compliance at lower cost?
+        <strong>Design review:</strong> Save baseline design, try alternatives, compare results before finalising.
+        <strong>Team collaboration:</strong> Export a scenario, send to colleague, import for parallel analysis.</p>
+    </div>
+  </div>
+
+  <!-- 4.13 NRW -->
+  <div class="feature">
+    <h3>4.13 &nbsp; Non-Revenue Water (NRW) Analysis</h3>
+
+    <p>
+      Non-Revenue Water — water produced but not billed — is a critical metric for AMRUT 2.0. Soliton calculates
+      NRW as the difference between system input (from reservoirs) and consumer demand (at junctions), expressed
+      as a percentage. It also identifies leakage hotspots by flagging zones with excess pressure.
+    </p>
+
+    <img src="4.13.png" alt="NRW Analysis" class="screenshot-img">
+
+    <h4>NRW Analysis Components</h4>
+    <ul>
+      <li><strong>Water balance:</strong> Total system input (LPS) vs. total demand served (LPS)</li>
+      <li><strong>NRW percentage:</strong> Automatic calculation with AMRUT compliance check (&lt;20%)</li>
+      <li><strong>Leakage hotspots:</strong> Nodes where pressure exceeds 1.5× the design floor — excess pressure drives physical losses</li>
+      <li><strong>Excess pressure table:</strong> Lists each node with pressure above threshold, showing excess metres</li>
+    </ul>
+
+    <div class="benefit-box">
+      <div class="label">How This Helps</div>
+      <p>Reducing NRW is a primary AMRUT objective. By identifying high-pressure zones, Soliton guides PRV placement
+        for pressure management — the most cost-effective NRW reduction strategy. This directly supports DPR
+        justification for pressure management infrastructure investment.</p>
+    </div>
+  </div>
+
+  <!-- 4.14 Cost Estimation -->
+  <div class="feature">
+    <h3>4.14 &nbsp; Cost Estimation</h3>
+
+    <p>
+      Soliton calculates infrastructure costs for each pipe based on diameter, material, and length. This provides
+      a preliminary bill of quantities (BOQ) for budget planning and AMRUT funding requests. Costs can be compared
+      across design scenarios to identify the most cost-effective option.
+    </p>
+
+    <img src="4.14.png" alt="Cost Estimation" class="screenshot-img">
+
+    <div class="benefit-box">
+      <div class="label">How This Helps</div>
+      <p>Early cost estimation enables engineers to evaluate design alternatives against budget constraints.
+        Comparing "all DI" vs "DI mains + HDPE distribution" scenarios shows the cost-performance tradeoff,
+        informing material selection decisions in the DPR.</p>
+    </div>
+  </div>
+
+  <!-- 4.15 Export -->
+  <div class="feature">
+    <h3>4.15 &nbsp; Export &amp; Reporting — CSV, INP, DPR</h3>
+
+    <p>
+      Soliton generates multiple export formats designed for government submission and engineering documentation.
+      The flagship export is the government-style Detailed Project Report (DPR) PDF, formatted with city/state
+      metadata, hydraulic analysis tables, deficiency identification, and formal recommendation sections.
+    </p>
+
+    <img src="4.15.png" alt="Export and Reporting" class="screenshot-img">
+
+    <h4>Export Formats</h4>
+    <table>
+      <tr>
+        <th>Format</th>
+        <th>Content</th>
+        <th>Use Case</th>
+      </tr>
+      <tr>
+        <td><strong>DPR (PDF)</strong></td>
+        <td>Executive summary, hydraulic analysis, design criteria, deficient zones, recommendations, city metadata, map screenshot</td>
+        <td>AMRUT 2.0 DPR submission, municipal authority approvals</td>
+      </tr>
+      <tr>
+        <td><strong>Nodes CSV</strong></td>
+        <td>Node ID, elevation, pressure, head, demand, status</td>
+        <td>DPR annexure, Excel analysis, GIS integration</td>
+      </tr>
+      <tr>
+        <td><strong>Pipes CSV</strong></td>
+        <td>Pipe ID, length, diameter, flow, velocity, headloss, status</td>
+        <td>BOQ preparation, tender documentation</td>
+      </tr>
+      <tr>
+        <td><strong>Print Summary</strong></td>
+        <td>One-page overview: headline metrics, deficient zones, criteria summary, signature block</td>
+        <td>Quick review by senior officials, file noting</td>
+      </tr>
+      <tr>
+        <td><strong>INP File</strong></td>
+        <td>Standard EPANET input file</td>
+        <td>Interoperability with other hydraulic tools, archival, third-party verification</td>
+      </tr>
+    </table>
+
+    <div class="highlight-box">
+      <div class="label">DPR Export — Government Ready</div>
+      <p>The DPR export auto-populates Ayodhya-specific metadata: "Government of Uttar Pradesh", "UP Jal Nigam",
+        "Ayodhya Nagar Nigam", AMRUT 2.0 mission designation, Saryu River source, 100 MLD WTP capacity.
+        The report follows standard government DPR format with reference numbering (AYD-24-DMA-001).</p>
+    </div>
+  </div>
+
+  <!-- 4.16 Criticality -->
+  <div class="feature">
+    <h3>4.16 &nbsp; Criticality (N-1) Analysis</h3>
+
+    <p>
+      Network resilience requires that no single pipe or pump failure catastrophically disrupts supply.
+      The N-1 criticality analysis systematically simulates the closure of each element, one at a time,
+      and measures the impact on downstream pressure and flow. This identifies single points of failure
+      and guides redundancy planning.
+    </p>
+
+    <img src="4.16.png" alt="Criticality N-1 Analysis" class="screenshot-img">
+
+    <div class="benefit-box">
+      <div class="label">How This Helps</div>
+      <p>Identifies the most critical infrastructure elements. If shutting down a single 300mm trunk main
+        drops 15 junctions below minimum pressure, that trunk main needs a parallel bypass or loop connection.
+        This analysis directly feeds into the DPR's resilience and redundancy chapter.</p>
+    </div>
+
+    <div class="usecase-box">
+      <div class="label">Where To Use</div>
+      <p><strong>Resilience planning:</strong> Prioritise which pipes need parallel capacity.
+        <strong>Maintenance scheduling:</strong> Know which shutdowns will have minimal impact.
+        <strong>Emergency preparedness:</strong> Pre-plan alternative supply routes for critical infrastructure failure.</p>
+    </div>
+  </div>
+
+  <!-- 4.17 DMA/Zones -->
+  <div class="feature">
+    <h3>4.17 &nbsp; OZ / DMA Zone Delineation</h3>
+
+    <p>
+      Operational Zones (OZs) and District Metering Areas (DMAs) are the foundation of 24×7 Pressurised Water
+      Supply Systems as defined in CPHEEO 2023 (Ch. 12.11, 12.12). OZs are larger hydraulically isolated zones
+      supplied from a single source; DMAs are smaller sub-zones within OZs used for flow measurement and NRW
+      monitoring. Soliton supports delineating both OZ and DMA boundaries, identifying isolation valve locations,
+      and partitioning the network into pressure-balanced zones. Each zone can be independently managed for
+      flow measurement, leak detection, and pressure optimisation.
+    </p>
+
+    <img src="4.17.png" alt="DMA Zone Delineation" class="screenshot-img">
+
+    <div class="benefit-box">
+      <div class="label">How This Helps</div>
+      <p>OZs and DMAs are mandatory for AMRUT 2.0 and CPHEEO 2023 compliance. Soliton's zone delineation tool
+        allows engineers to test different OZ/DMA configurations — size, boundary placement, inlet design,
+        isolation valve positions — and evaluate each configuration's hydraulic performance before construction.
+        This directly supports the decentralised approach to 24×7 PWSS mandated in the "Drink from Tap" manual.</p>
+    </div>
+  </div>
+
+  <!-- 4.18 Digital Twin -->
+  <div class="feature">
+    <h3>4.18 &nbsp; Digital Twin &amp; SCADA Integration</h3>
+
+    <p>
+      Soliton is architected with a digital twin seam — the ability to overlay real-time field measurements
+      (from SCADA systems, pressure loggers, flow meters) on top of the hydraulic model. This enables continuous
+      comparison between modelled predictions and actual field conditions, forming the basis for a live
+      operational digital twin.
+    </p>
+
+    <img src="4.18.png" alt="Digital Twin and SCADA Integration" class="screenshot-img">
+
+    <h4>Digital Twin Architecture</h4>
+    <ul>
+      <li><strong>Telemetry import:</strong> Upload CSV files with field measurements (node ID, timestamp, pressure, flow)</li>
+      <li><strong>SCADA adapter:</strong> WebSocket interface for live SCADA gateway connection (when available)</li>
+      <li><strong>Model calibration:</strong> Compare modelled vs measured pressures, adjust roughness coefficients to minimise error</li>
+      <li><strong>Monitored node overlay:</strong> Field-monitored nodes highlighted with cyan ring on map</li>
+      <li><strong>Mismatch detection:</strong> Colour-coded indicators show where model predictions diverge from reality</li>
+    </ul>
+
+    <div class="highlight-box">
+      <div class="label">Future-Ready Architecture</div>
+      <p>While initial deployment uses the platform for design and DPR preparation, the digital twin architecture
+        ensures Soliton can evolve into a live operational tool as Ayodhya deploys SCADA infrastructure under AMRUT 2.0.
+        The same platform that designs the network today can monitor it tomorrow.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 5: AYODHYA DEMO -->
+<!-- ============================================================ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">Section 5</span>
+    <h2>Ayodhya — Pre-Built Demonstration</h2>
+    <div class="section-subtitle">Ready-to-Use Network Models for Ayodhya</div>
+  </div>
+
+  <p>
+    Soliton ships with three pre-built network scenarios specifically designed for Ayodhya, reflecting
+    real-world topology, demand patterns, and infrastructure challenges. These scenarios can be loaded
+    with a single click and immediately simulated, modified, or used as starting points for detailed design.
+  </p>
+
+  <img src="5.png" alt="Ayodhya Pre-Built Demonstration" class="screenshot-img">
+
+  <h3 style="margin-top: 6mm;">Scenario 1: 24×7 Water Supply in 11 Wards</h3>
+  <p>
+    Full-scale network model covering all 11 municipal wards with approximately 40 junctions, 50+ pipes,
+    2 overhead tanks, pumps, and looped distribution grid. Includes high-demand zones for Ram Janmabhoomi
+    temple area and Saryu ghat riverfront. Intentionally models peripheral wards with undersized pipes
+    to demonstrate pressure deficiency — exactly as real-world conditions exist — and justify phase-2
+    augmentation in the DPR.
+  </p>
+
+  <h3 style="margin-top: 4mm;">Scenario 2: 24×7 in 4 Selected DMAs</h3>
+  <p>
+    Reduced-scope pilot covering Central, Ghat, North, and Transmission zones only (~20 junctions).
+    Demonstrates achievable 24×7 coverage in core areas as a first-phase AMRUT implementation.
+    Lower capital cost, faster deployment, proof-of-concept for city-wide rollout.
+  </p>
+
+  <h3 style="margin-top: 4mm;">Scenario 3: Saryu Source Augmentation Phase 1</h3>
+  <p>
+    Transmission-only model focusing on the raw-water rising main from the Saryu River intake/WTP to
+    overhead tanks. Used for intake sizing, pump selection, and transmission main design discussions.
+    Minimal distribution — only 2 supply nodes to verify transmission capacity.
+  </p>
+
+  <div class="highlight-box">
+    <div class="label">Embedded City Metadata</div>
+    <table>
+      <tr><td style="width:35%; font-weight:700;">City</td><td>Ayodhya, Uttar Pradesh</td></tr>
+      <tr><td style="font-weight:700;">State Government</td><td>Government of Uttar Pradesh</td></tr>
+      <tr><td style="font-weight:700;">Implementing Agency</td><td>UP Jal Nigam</td></tr>
+      <tr><td style="font-weight:700;">Municipal Body</td><td>Ayodhya Nagar Nigam</td></tr>
+      <tr><td style="font-weight:700;">Mission</td><td>AMRUT 2.0</td></tr>
+      <tr><td style="font-weight:700;">City Class</td><td>Class I (population 5.5 lakh)</td></tr>
+      <tr><td style="font-weight:700;">Water Source</td><td>Saryu River</td></tr>
+      <tr><td style="font-weight:700;">WTP Capacity</td><td>100 MLD</td></tr>
+      <tr><td style="font-weight:700;">Growth Rate</td><td>2.5% per annum</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 6: CPHEEO COMPLIANCE MATRIX -->
+<!-- ============================================================ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">Section 6</span>
+    <h2>CPHEEO Compliance Matrix</h2>
+    <div class="section-subtitle">Adherence to CPHEEO 2023 (4th Edition) — "Drink from Tap" Manual</div>
+  </div>
+
+  <table>
+    <tr>
+      <th style="width:25%;">CPHEEO Parameter</th>
+      <th style="width:15%;">Standard Value</th>
+      <th style="width:15%;">Soliton Default</th>
+      <th style="width:10%;">Status</th>
+      <th>Implementation</th>
+    </tr>
+    <tr>
+      <td>Per-capita supply (LPCD)</td>
+      <td>135 (Class I + sewer)</td>
+      <td>135</td>
+      <td style="color:#2e7d32; font-weight:700;">✓</td>
+      <td>Configurable with CPHEEO presets (70/100/135/150) — Ch. 16.12</td>
+    </tr>
+    <tr>
+      <td>Residual pressure (24×7 DMA)</td>
+      <td>17–21 m</td>
+      <td>17 m</td>
+      <td style="color:#2e7d32; font-weight:700;">✓</td>
+      <td>Auto-checked at every junction; PASS/FAIL badges — Ch. 12.14.2</td>
+    </tr>
+    <tr>
+      <td>Pipe velocity (permissible)</td>
+      <td>0.6 – 2.5 m/s</td>
+      <td>0.6 – 2.5 m/s</td>
+      <td style="color:#2e7d32; font-weight:700;">✓</td>
+      <td>Auto-checked; velocity status badges on all pipes — Ch. 12.11</td>
+    </tr>
+    <tr>
+      <td>Pipe velocity (economic)</td>
+      <td>1.0 – 1.5 m/s</td>
+      <td>1.0 – 1.5 m/s</td>
+      <td style="color:#2e7d32; font-weight:700;">✓</td>
+      <td>OPTIMAL band highlighted in green</td>
+    </tr>
+    <tr>
+      <td>Hazen-Williams roughness</td>
+      <td>130 DI, 150 HDPE/PVC</td>
+      <td>130–150 per material</td>
+      <td style="color:#2e7d32; font-weight:700;">✓</td>
+      <td>Auto-set from material selection — Ch. 6.5.1.4</td>
+    </tr>
+    <tr>
+      <td>Peak factor</td>
+      <td>2.5</td>
+      <td>2.5</td>
+      <td style="color:#2e7d32; font-weight:700;">✓</td>
+      <td>Applied via diurnal demand pattern — Ch. 16.16</td>
+    </tr>
+    <tr>
+      <td>Fire demand</td>
+      <td>Per Ch. 16.23</td>
+      <td>Kuichling formula</td>
+      <td style="color:#2e7d32; font-weight:700;">✓</td>
+      <td>Built-in calculator + fire flow analysis — Ch. 16.23</td>
+    </tr>
+    <tr>
+      <td>NRW target</td>
+      <td>&lt;20%</td>
+      <td>&lt;20%</td>
+      <td style="color:#2e7d32; font-weight:700;">✓</td>
+      <td>Auto-calculated water balance with PASS/FAIL — AMRUT 2.0 / Ch. 14.8</td>
+    </tr>
+    <tr>
+      <td>Design period</td>
+      <td>30 years</td>
+      <td>30 years</td>
+      <td style="color:#2e7d32; font-weight:700;">✓</td>
+      <td>Population projection with configurable growth rate — Ch. 16.8</td>
+    </tr>
+    <tr>
+      <td>Headloss formula</td>
+      <td>Hazen-Williams</td>
+      <td>Hazen-Williams</td>
+      <td style="color:#2e7d32; font-weight:700;">✓</td>
+      <td>EPANET 2.2 engine with H-W formula — Ch. 6.5.1.2</td>
+    </tr>
+    <tr>
+      <td>Flow units</td>
+      <td>SI (LPS)</td>
+      <td>LPS</td>
+      <td style="color:#2e7d32; font-weight:700;">✓</td>
+      <td>All values in SI units throughout</td>
+    </tr>
+    <tr>
+      <td>Hydraulic solver</td>
+      <td>EPANET (recognised)</td>
+      <td>EPANET 2.2 (USEPA)</td>
+      <td style="color:#2e7d32; font-weight:700;">✓</td>
+      <td>Explicitly recommended in Ch. 12.10.4</td>
+    </tr>
+    <tr>
+      <td>OZ / DMA design</td>
+      <td>Mandatory for 24×7 PWSS</td>
+      <td>OZ + DMA support</td>
+      <td style="color:#2e7d32; font-weight:700;">✓</td>
+      <td>Zone delineation + hydraulic analysis — Ch. 12.11, 12.12</td>
+    </tr>
+    <tr>
+      <td>Water quality (Drink from Tap)</td>
+      <td>IS 10500:2012 at tap</td>
+      <td>Chlorine decay, water age, source trace</td>
+      <td style="color:#2e7d32; font-weight:700;">✓</td>
+      <td>EPS water quality simulation — Ch. 7, 9</td>
+    </tr>
+    <tr>
+      <td>Model calibration</td>
+      <td>Required for DPR</td>
+      <td>Field data comparison</td>
+      <td style="color:#2e7d32; font-weight:700;">✓</td>
+      <td>Modelled vs measured pressure overlay — Ch. 12.18</td>
+    </tr>
+    <tr>
+      <td>GIS integration</td>
+      <td>Recommended</td>
+      <td>MapLibre GL basemap</td>
+      <td style="color:#2e7d32; font-weight:700;">✓</td>
+      <td>Satellite/street map design + GeoJSON import — Ch. 12.10.7</td>
+    </tr>
+    <tr>
+      <td>SCADA / Digital Twin</td>
+      <td>Recommended for 24×7</td>
+      <td>SCADA adapter + telemetry</td>
+      <td style="color:#2e7d32; font-weight:700;">✓</td>
+      <td>Live monitoring overlay + IoT seam — Ch. 14.23</td>
+    </tr>
+  </table>
+
+  <div class="benefit-box" style="margin-top: 5mm;">
+    <div class="label">Full Compliance</div>
+    <p>Soliton meets or exceeds every CPHEEO 2023 (4th Edition) design criterion relevant to water distribution
+      network design and "Drink from Tap" compliance. All parameters are configurable to accommodate site-specific
+      requirements while maintaining CPHEEO defaults as the baseline. Chapter references from the Manual on Water
+      Supply and Treatment Systems are provided for each parameter.</p>
+  </div>
+
+  <h3 style="margin: 8mm 0 4mm 0; font-size: 14pt; border-bottom: 1.5pt solid #4a6fa5; padding-bottom: 2mm;">
+    CPHEEO 2023 Manual Requirements — Soliton Coverage Matrix
+  </h3>
+
+  <p>The following table maps each major requirement from the CPHEEO 2023 "Drink from Tap" Manual (Part A — Engineering)
+    to how Soliton addresses it. This ensures reviewers can verify compliance chapter by chapter.</p>
+
+  <table>
+    <tr>
+      <th style="width:10%;">Chapter</th>
+      <th style="width:30%;">CPHEEO 2023 Requirement</th>
+      <th style="width:35%;">How Soliton Addresses It</th>
+      <th style="width:10%;">Status</th>
+    </tr>
+    <tr>
+      <td><strong>Ch. 2</strong></td>
+      <td>Population estimation, demand forecasting, design period, per-capita supply (LPCD)</td>
+      <td>Configurable LPCD (70/100/135/150), population-based demand calculator, 30-year design period with growth rate projection</td>
+      <td style="color:#2e7d32; font-weight:700;">✓ Built-in</td>
+    </tr>
+    <tr>
+      <td><strong>Ch. 6</strong></td>
+      <td>Transmission of water — headloss calculation (Hazen-Williams, Darcy-Weisbach), pipe roughness coefficients, economical pipe sizing</td>
+      <td>EPANET 2.2 solver with Hazen-Williams formula, material-specific roughness (DI/HDPE/PVC per Ch. 6.5.1.4), cost estimation for pipe sizing optimisation</td>
+      <td style="color:#2e7d32; font-weight:700;">✓ Built-in</td>
+    </tr>
+    <tr>
+      <td><strong>Ch. 7</strong></td>
+      <td>Water quality testing — IS 10500:2012 compliance, chlorine residual at consumer tap</td>
+      <td>EPS water quality simulation: chlorine decay modelling (bulk + wall coefficients), water age tracking, source tracing to verify quality at every node</td>
+      <td style="color:#2e7d32; font-weight:700;">✓ Built-in</td>
+    </tr>
+    <tr>
+      <td><strong>Ch. 9</strong></td>
+      <td>Disinfection — chlorine contact time, residual chlorine concentration, re-chlorination points</td>
+      <td>Chemical concentration simulation in EPS, injection source definition (CONCEN/MASS/SETPOINT/FLOWPACED), decay coefficient modelling</td>
+      <td style="color:#2e7d32; font-weight:700;">✓ Built-in</td>
+    </tr>
+    <tr>
+      <td><strong>Ch. 11</strong></td>
+      <td>Pipes and pipe appurtenances — material selection (DI, HDPE, PVC, GI), valves (PRV, PSV, FCV, gate, butterfly), pipe sizing for 24×7</td>
+      <td>Material-aware pipe modelling (DI/HDPE/PVC with auto-roughness), all 6 EPANET valve types (PRV/PSV/PBV/FCV/TCV/GPV), pipe status control (open/closed/CV)</td>
+      <td style="color:#2e7d32; font-weight:700;">✓ Built-in</td>
+    </tr>
+    <tr>
+      <td><strong>Ch. 12.2</strong></td>
+      <td>Distribution system — continuous vs intermittent supply, system pattern, pressure zones, layout of network</td>
+      <td>24-hour EPS simulation with diurnal demand patterns, pressure zone analysis, looped/branched network design on actual city maps</td>
+      <td style="color:#2e7d32; font-weight:700;">✓ Built-in</td>
+    </tr>
+    <tr>
+      <td><strong>Ch. 12.4</strong></td>
+      <td>Service reservoirs — ESR/GSR capacity, elevation, fill/drain cycles, fire storage</td>
+      <td>Tank modelling with elevation, diameter, init/min/max levels. EPS shows 24-hour fill/drain cycle charts. Fire demand calculator for storage sizing</td>
+      <td style="color:#2e7d32; font-weight:700;">✓ Built-in</td>
+    </tr>
+    <tr>
+      <td><strong>Ch. 12.6</strong></td>
+      <td>Hydraulic network analysis — principles, methods, steady-state and extended period simulation</td>
+      <td>Full EPANET 2.2 solver: steady-state analysis + 24-hour EPS with hourly timesteps. Results at every node and link</td>
+      <td style="color:#2e7d32; font-weight:700;">✓ Built-in</td>
+    </tr>
+    <tr>
+      <td><strong>Ch. 12.10</strong></td>
+      <td>Water distribution network model — EPANET software, GIS integration, network inputs, demand inputs</td>
+      <td>EPANET 2.2 WASM engine (Ch. 12.10.4 explicitly endorses EPANET). MapLibre GL for GIS basemap. Full INP serialization. Population-based demand allocation</td>
+      <td style="color:#2e7d32; font-weight:700;">✓ Built-in</td>
+    </tr>
+    <tr>
+      <td><strong>Ch. 12.11</strong></td>
+      <td>Operational Zones (OZ) — design criteria, hydraulic model development, boundary optimisation, pipe diameter optimisation</td>
+      <td>Zone delineation with isolation valve placement, boundary testing, per-zone pressure/velocity analysis, pipe optimisation support</td>
+      <td style="color:#2e7d32; font-weight:700;">✓ Built-in</td>
+    </tr>
+    <tr>
+      <td><strong>Ch. 12.12</strong></td>
+      <td>District Metered Areas (DMA) — design, GIS-based delineation, inlet metering, isolation</td>
+      <td>DMA boundary delineation, inlet identification, flow measurement points, isolation valve placement. GIS basemap for spatial design</td>
+      <td style="color:#2e7d32; font-weight:700;">✓ Built-in</td>
+    </tr>
+    <tr>
+      <td><strong>Ch. 12.14</strong></td>
+      <td>Pressure management — equitable flow, 17–21m nodal pressure target, water loss reduction by pressure control</td>
+      <td>Configurable pressure floor (7/12/17m presets), auto PASS/FAIL at every junction, PRV placement guidance via NRW leakage hotspot analysis, excess pressure flagging</td>
+      <td style="color:#2e7d32; font-weight:700;">✓ Built-in</td>
+    </tr>
+    <tr>
+      <td><strong>Ch. 12.15</strong></td>
+      <td>Estimating losses — physical and commercial losses, leak repair programme, SCADA attached to DMA</td>
+      <td>NRW water balance (system input vs demand), leakage hotspot detection (excess pressure zones), SCADA adapter for live loss monitoring</td>
+      <td style="color:#2e7d32; font-weight:700;">✓ Built-in</td>
+    </tr>
+    <tr>
+      <td><strong>Ch. 12.16</strong></td>
+      <td>DMA management — inflow monitoring, pressure control, NRW calculation at DMA level</td>
+      <td>Per-DMA hydraulic analysis, NRW calculation per zone, pressure compliance reporting per DMA</td>
+      <td style="color:#2e7d32; font-weight:700;">✓ Built-in</td>
+    </tr>
+    <tr>
+      <td><strong>Ch. 12.18</strong></td>
+      <td>Model calibration and validation — compare modelled vs measured, adjust roughness coefficients</td>
+      <td>Telemetry overlay: upload field measurements, compare modelled vs measured pressures, calibration workflow with roughness adjustment</td>
+      <td style="color:#2e7d32; font-weight:700;">✓ Built-in</td>
+    </tr>
+    <tr>
+      <td><strong>Ch. 13</strong></td>
+      <td>Water meters — 100% consumer metering, bulk metering at DMA inlets, AMR/AMI systems</td>
+      <td>DMA inlet metering design, demand allocation per junction (supports metered demand data import). 100% metering scenario modelling</td>
+      <td style="color:#2e7d32; font-weight:700;">✓ Supported</td>
+    </tr>
+    <tr>
+      <td><strong>Ch. 14.7</strong></td>
+      <td>DMA monitoring and control — inflow/pressure monitoring, IoT-based data collection</td>
+      <td>SCADA adapter interface, telemetry CSV import, WebSocket for live data. Digital twin view overlays live readings on model</td>
+      <td style="color:#2e7d32; font-weight:700;">✓ Built-in</td>
+    </tr>
+    <tr>
+      <td><strong>Ch. 14.8</strong></td>
+      <td>NRW monitoring in 24×7 — at DMA level using IoT, smart meter integration</td>
+      <td>NRW dashboard with system input/demand balance, per-node excess pressure analysis, AMRUT 2.0 target compliance check (&lt;20%)</td>
+      <td style="color:#2e7d32; font-weight:700;">✓ Built-in</td>
+    </tr>
+    <tr>
+      <td><strong>Ch. 14.18</strong></td>
+      <td>GIS and telemetry systems — GIS-based network mapping, telemetry for remote monitoring</td>
+      <td>MapLibre GL basemap (satellite + street), GeoJSON import, telemetry overlay with monitored node highlighting, CSV/API data import</td>
+      <td style="color:#2e7d32; font-weight:700;">✓ Built-in</td>
+    </tr>
+    <tr>
+      <td><strong>Ch. 14.23</strong></td>
+      <td>Digital twins — objective, setup, working, benefits of going digital</td>
+      <td>Digital twin architecture: live SCADA overlay on hydraulic model, modelled vs measured comparison, mismatch detection, continuous model updating</td>
+      <td style="color:#2e7d32; font-weight:700;">✓ Built-in</td>
+    </tr>
+    <tr>
+      <td><strong>Ch. 16.23</strong></td>
+      <td>Fire requirement — fire demand calculation, hydrant capacity</td>
+      <td>Fire demand calculator (Kuichling formula), fire flow analysis at every junction under peak + fire demand, hydrant count estimation</td>
+      <td style="color:#2e7d32; font-weight:700;">✓ Built-in</td>
+    </tr>
+  </table>
+
+  <div class="highlight-box" style="margin-top: 5mm;">
+    <div class="label">21 of 21 Requirements Addressed</div>
+    <p>Soliton provides coverage for every major engineering requirement in the CPHEEO 2023 "Drink from Tap"
+      manual relevant to water distribution network design, analysis, and operational monitoring. The platform
+      is purpose-built to support DPR preparation, AMRUT 2.0 compliance, and the transition from intermittent
+      to 24×7 pressurised water supply with drink-from-tap quality.</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 7: COMPETITIVE ADVANTAGE -->
+<!-- ============================================================ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">Section 7</span>
+    <h2>Competitive Advantage</h2>
+    <div class="section-subtitle">Soliton vs. Traditional Design Tools</div>
+  </div>
+
+  <table>
+    <tr>
+      <th style="width:22%;">Criterion</th>
+      <th style="width:26%;">Soliton</th>
+      <th style="width:26%;">WaterGEMS / WaterCAD</th>
+      <th style="width:26%;">Manual EPANET</th>
+    </tr>
+    <tr>
+      <td><strong>Licence Cost</strong></td>
+      <td class="comparison-highlight">₹0 (zero)</td>
+      <td>₹5–15 lakh/year per seat</td>
+      <td>Free (but no GUI)</td>
+    </tr>
+    <tr>
+      <td><strong>Installation</strong></td>
+      <td class="comparison-highlight">None — runs in browser</td>
+      <td>Windows desktop installer, admin rights required</td>
+      <td>Desktop installer</td>
+    </tr>
+    <tr>
+      <td><strong>IT Infrastructure</strong></td>
+      <td class="comparison-highlight">None — any modern browser</td>
+      <td>Windows workstation, dongles</td>
+      <td>Windows workstation</td>
+    </tr>
+    <tr>
+      <td><strong>CPHEEO Compliance</strong></td>
+      <td class="comparison-highlight">CPHEEO 2023 "Drink from Tap" built-in, auto-checked</td>
+      <td>Manual configuration required</td>
+      <td>Manual calculation</td>
+    </tr>
+    <tr>
+      <td><strong>Indian Standards</strong></td>
+      <td class="comparison-highlight">LPCD presets, IS pipe sizes, ₹ costs</td>
+      <td>US/UK defaults, manual adaptation</td>
+      <td>Manual configuration</td>
+    </tr>
+    <tr>
+      <td><strong>Map Integration</strong></td>
+      <td class="comparison-highlight">Satellite + street basemaps</td>
+      <td>GIS integration (additional licence)</td>
+      <td>No map support</td>
+    </tr>
+    <tr>
+      <td><strong>DPR Export</strong></td>
+      <td class="comparison-highlight">One-click government format</td>
+      <td>Manual report writing</td>
+      <td>Manual report writing</td>
+    </tr>
+    <tr>
+      <td><strong>Learning Curve</strong></td>
+      <td class="comparison-highlight">Hours (web-based, intuitive)</td>
+      <td>Weeks (complex desktop GIS)</td>
+      <td>Days (text-based INP editing)</td>
+    </tr>
+    <tr>
+      <td><strong>Collaboration</strong></td>
+      <td class="comparison-highlight">Export/import JSON scenarios</td>
+      <td>File sharing, licence per user</td>
+      <td>File sharing</td>
+    </tr>
+    <tr>
+      <td><strong>Digital Twin Ready</strong></td>
+      <td class="comparison-highlight">Built-in SCADA seam</td>
+      <td>Separate product (additional cost)</td>
+      <td>Not available</td>
+    </tr>
+    <tr>
+      <td><strong>Hydraulic Engine</strong></td>
+      <td>EPANET 2.2</td>
+      <td>Proprietary (Bentley)</td>
+      <td>EPANET 2.2</td>
+    </tr>
+  </table>
+
+  <div class="benefit-box" style="margin-top: 5mm;">
+    <div class="label">Total Cost of Ownership</div>
+    <p>For a municipal engineering team of 5 engineers over 5 years: WaterGEMS = ₹25–75 lakh in licence fees alone.
+      Soliton = ₹0 in software cost. The savings can be redirected to actual infrastructure — pipes, tanks, meters —
+      that directly improve water supply to citizens.</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 8: DEPLOYMENT -->
+<!-- ============================================================ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">Section 8</span>
+    <h2>Deployment &amp; Infrastructure Requirements</h2>
+  </div>
+
+  <h3 style="margin-bottom: 4mm;">Minimum Requirements</h3>
+
+  <table>
+    <tr>
+      <th style="width:30%;">Requirement</th>
+      <th>Specification</th>
+    </tr>
+    <tr>
+      <td><strong>Computer</strong></td>
+      <td>Any modern laptop or desktop (Windows, Mac, Linux, Chrome OS)</td>
+    </tr>
+    <tr>
+      <td><strong>Browser</strong></td>
+      <td>Google Chrome, Mozilla Firefox, Microsoft Edge, or Safari (latest version)</td>
+    </tr>
+    <tr>
+      <td><strong>Internet</strong></td>
+      <td>Required for initial load and map tiles. Core simulation works offline once loaded.</td>
+    </tr>
+    <tr>
+      <td><strong>Server</strong></td>
+      <td>None required. Can optionally be hosted on any static web server (Nginx, Apache, cloud CDN).</td>
+    </tr>
+    <tr>
+      <td><strong>Database</strong></td>
+      <td>None required. Data stored in browser localStorage.</td>
+    </tr>
+    <tr>
+      <td><strong>Special Software</strong></td>
+      <td>None. No plugins, no Java, no Flash, no ActiveX.</td>
+    </tr>
+  </table>
+
+  <h3 style="margin: 6mm 0 4mm 0;">Deployment Options</h3>
+
+  <div class="two-col">
+    <div class="highlight-box">
+      <div class="label">Option A: Cloud Hosted</div>
+      <p>Deploy on any cloud CDN (AWS CloudFront, Azure CDN, or government NIC cloud).
+        Engineers access via URL. Zero maintenance — static files only, no server processes.</p>
+    </div>
+    <div class="highlight-box">
+      <div class="label">Option B: Local Network</div>
+      <p>Deploy on internal Nginx server within municipal office LAN.
+        Works without internet after deployment. Full data stays within government network.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 9: ROADMAP -->
+<!-- ============================================================ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">Section 9</span>
+    <h2>Technology Roadmap</h2>
+    <div class="section-subtitle">Current Capabilities &amp; Future Development</div>
+  </div>
+
+  <h3 style="margin-bottom: 4mm;">Delivered (Current Release)</h3>
+  <div class="roadmap-item"><div class="roadmap-dot done"></div><div>Interactive map-based network design with satellite/street basemaps</div></div>
+  <div class="roadmap-item"><div class="roadmap-dot done"></div><div>EPANET 2.2 hydraulic simulation (steady-state + 24-hour EPS)</div></div>
+  <div class="roadmap-item"><div class="roadmap-dot done"></div><div>CPHEEO design criteria compliance checking</div></div>
+  <div class="roadmap-item"><div class="roadmap-dot done"></div><div>Results dashboard with pressure, velocity, NRW analysis</div></div>
+  <div class="roadmap-item"><div class="roadmap-dot done"></div><div>Diurnal demand pattern editor with presets</div></div>
+  <div class="roadmap-item"><div class="roadmap-dot done"></div><div>Fire demand calculator (Kuichling formula)</div></div>
+  <div class="roadmap-item"><div class="roadmap-dot done"></div><div>Scenario save/load/compare</div></div>
+  <div class="roadmap-item"><div class="roadmap-dot done"></div><div>Government-format DPR export</div></div>
+  <div class="roadmap-item"><div class="roadmap-dot done"></div><div>CSV/INP/Print exports</div></div>
+  <div class="roadmap-item"><div class="roadmap-dot done"></div><div>Pump, valve, and tank modelling</div></div>
+  <div class="roadmap-item"><div class="roadmap-dot done"></div><div>Undo/redo with full history</div></div>
+  <div class="roadmap-item"><div class="roadmap-dot done"></div><div>Ayodhya pre-built demonstration (3 AMRUT scenarios)</div></div>
+
+  <h3 style="margin: 6mm 0 4mm 0;">Near-Term (Next Release)</h3>
+  <div class="roadmap-item"><div class="roadmap-dot next"></div><div>Live SCADA integration for digital twin operations</div></div>
+  <div class="roadmap-item"><div class="roadmap-dot next"></div><div>Automated pipe optimisation (genetic algorithm)</div></div>
+  <div class="roadmap-item"><div class="roadmap-dot next"></div><div>GIS data import (Shapefile, GeoJSON from municipal surveys)</div></div>
+  <div class="roadmap-item"><div class="roadmap-dot next"></div><div>Multi-user collaboration with cloud sync</div></div>
+  <div class="roadmap-item"><div class="roadmap-dot next"></div><div>Automated demand allocation from census/billing data</div></div>
+
+  <h3 style="margin: 6mm 0 4mm 0;">Future Vision</h3>
+  <div class="roadmap-item"><div class="roadmap-dot future"></div><div>AI-assisted network design — auto-layout from road network</div></div>
+  <div class="roadmap-item"><div class="roadmap-dot future"></div><div>Real-time leak detection using pressure pattern analysis</div></div>
+  <div class="roadmap-item"><div class="roadmap-dot future"></div><div>Mobile app for field engineers (data collection + viewing)</div></div>
+  <div class="roadmap-item"><div class="roadmap-dot future"></div><div>Water quality monitoring integration (chlorine, turbidity)</div></div>
+  <div class="roadmap-item"><div class="roadmap-dot future"></div><div>Multi-city dashboard for state-level oversight (UP Jal Nigam)</div></div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 10: ABOUT -->
+<!-- ============================================================ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">Section 10</span>
+    <h2>About Cognecto Private Limited</h2>
+  </div>
+
+  <p>
+    Cognecto Private Limited specialises in intelligent infrastructure solutions for Indian municipalities.
+    Our mission is to bring world-class engineering tools to municipal water utilities at zero software cost,
+    eliminating the licence-fee barrier that has historically limited access to hydraulic design capability.
+  </p>
+
+  <p>
+    Soliton is built on proven open-source foundations — EPANET 2.2 (US EPA), MapLibre GL, React — combined
+    with deep domain expertise in Indian water supply standards (CPHEEO, AMRUT, IS codes) and municipal
+    engineering workflows.
+  </p>
+
+  <div class="highlight-box" style="margin-top: 6mm;">
+    <div class="label">Contact</div>
+    <p>
+      <strong>Cognecto Private Limited</strong><br>
+      Email: info@cognecto.com
+    </p>
+  </div>
+
+  <div style="margin-top: 15mm; text-align: center; color: #888; font-size: 9pt; border-top: 0.5pt solid #ccc; padding-top: 5mm;">
+    <p>This document is the intellectual property of Cognecto Private Limited.<br>
+    Prepared for Ayodhya Jal Nigam / Ayodhya Nagar Nigam under AMRUT 2.0 Mission.</p>
+    <p style="margin-top: 3mm;">Document Reference: COG/AYD/SOL/2026-001 &nbsp;|&nbsp; Version 1.0 &nbsp;|&nbsp; July 2026</p>
+  </div>
+</div>
+
+</body>
+</html>
